@@ -46,7 +46,7 @@ export default function AdvisorScreen() {
     {
       id: "welcome",
       role: "assistant",
-      content: `Hey! I'm PawAI, your training advisor 🐾 I know ${dog?.name ?? "your dog"} is a ${dog?.age ?? ""} old ${dog?.breed ?? "dog"} at Level ${dog?.level ?? 1}. Ask me anything — or tap the mic to speak!`,
+      content: `Hey! I'm Pawlo, your dog's personal teacher 🐾 I know ${dog?.name ?? "your dog"} is a ${dog?.age ?? ""} old ${dog?.breed ?? "dog"} at Level ${dog?.level ?? 1}. Ask me anything about training — or tap the mic to speak!`,
     },
   ]);
   const [input, setInput] = useState("");
@@ -163,9 +163,9 @@ export default function AdvisorScreen() {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
 
     try {
-      const systemPrompt = `You are PawAI, an expert dog training advisor inside PawQuest.
+      const systemPrompt = `You are Pawlo — the friendly dog teacher mascot at the heart of the Pawlo app. You're warm, encouraging, and a little playful, like the most patient dog trainer the user has ever met. Think Duolingo's Duo, but for dogs.
 Dog profile: Name: ${dog?.name}, Breed: ${dog?.breed}, Age: ${dog?.age}, Level: ${dog?.level}, XP: ${dog?.total_xp}
-Rules: Always call the dog by name. Max 3 short paragraphs. Give numbered actionable steps. Be warm and encouraging.`;
+Rules: Always call the dog by name. Max 3 short paragraphs. Give numbered actionable steps when teaching a behaviour. Be warm, encouraging, jargon-free. Cheer for streaks and wins.`;
 
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not signed in");
@@ -231,10 +231,10 @@ Rules: Always call the dog by name. Max 3 short paragraphs. Give numbered action
         </TouchableOpacity>
         <View style={styles.aiHeader}>
           <View style={styles.aiAvatar}>
-            <Text style={styles.aiAvatarEmoji}>🤖</Text>
+            <Text style={styles.aiAvatarEmoji}>🐶</Text>
           </View>
           <View>
-            <Text style={styles.aiName}>PawAI Advisor</Text>
+            <Text style={styles.aiName}>Pawlo</Text>
             <Text style={styles.aiStatus}>
               {isListening
                 ? "🎤 Listening..."

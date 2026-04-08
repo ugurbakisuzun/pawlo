@@ -55,7 +55,7 @@ export function getLevelInfo(xp: number): {
     { level: 3, minXP: 500, title: "Good Boy/Girl" },
     { level: 4, minXP: 1000, title: "Focused Paw" },
     { level: 5, minXP: 2000, title: "Training Pro" },
-    { level: 6, minXP: 3500, title: "Alpha Quester" },
+    { level: 6, minXP: 3500, title: "Top Dog" },
   ];
   const current = [...levels].reverse().find((l) => xp >= l.minXP) ?? levels[0];
   const next = levels.find((l) => l.minXP > xp);

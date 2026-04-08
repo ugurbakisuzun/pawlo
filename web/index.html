@@ -3,13 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PawQuest — Level up your dog's life</title>
-  <meta name="description" content="The gamified AI dog training app. XP, levels, streaks, daily quests, and an AI coach in your pocket. Join the waitlist." />
+  <title>Pawlo — Your dog's personal teacher</title>
+  <meta name="description" content="The Duolingo for dogs. Bite-size daily lessons, instant AI feedback, real progress — Pawlo is the gentle, persistent teacher every dog deserves. Join the waitlist." />
 
   <!-- Open Graph / social -->
-  <meta property="og:title" content="PawQuest — Level up your dog's life" />
-  <meta property="og:description" content="Gamified AI dog training. Turn training into a game your dog actually wants to play." />
+  <meta property="og:title" content="Pawlo — Your dog's personal teacher" />
+  <meta property="og:description" content="The Duolingo for dogs. 5 minutes a day. A better dog forever." />
   <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://pawlo.so" />
   <meta name="theme-color" content="#0F0B2E" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -90,17 +91,18 @@
       align-items: center;
       gap: 8px;
       font-weight: 800;
-      font-size: 20px;
+      font-size: 22px;
+      letter-spacing: -0.01em;
     }
     .logo-mark {
-      width: 36px;
-      height: 36px;
+      width: 38px;
+      height: 38px;
       border-radius: 12px;
       background: var(--gold);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
+      font-size: 22px;
     }
 
     .nav-cta {
@@ -146,11 +148,11 @@
     .hero-eyebrow::before { content: '🐾'; font-size: 14px; }
 
     h1.hero-title {
-      font-size: clamp(38px, 6vw, 64px);
+      font-size: clamp(40px, 6.4vw, 72px);
       font-weight: 900;
-      line-height: 1.05;
-      letter-spacing: -0.03em;
-      margin-bottom: 20px;
+      line-height: 1.02;
+      letter-spacing: -0.035em;
+      margin-bottom: 22px;
     }
     .hero-title .highlight {
       background: linear-gradient(135deg, var(--gold) 0%, var(--gold-bright) 50%, var(--purple) 100%);
@@ -160,11 +162,12 @@
     }
 
     .hero-sub {
-      font-size: 18px;
+      font-size: 19px;
       color: var(--text-2);
       max-width: 540px;
       margin-bottom: 32px;
     }
+    .hero-sub strong { color: var(--text); font-weight: 600; }
 
     /* Email form */
     .email-form {
@@ -383,7 +386,7 @@
       font-size: clamp(30px, 4vw, 46px);
       font-weight: 900;
       line-height: 1.1;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.025em;
       text-align: center;
       max-width: 760px;
       margin: 0 auto 18px;
@@ -470,7 +473,7 @@
     .step-title { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
     .step-text { color: var(--text-2); font-size: 14px; }
 
-    /* ───── AI Coach showcase ───── */
+    /* ───── Pawlo (AI) showcase ───── */
     .coach-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -490,10 +493,10 @@
     }
     .coach-msg.user { justify-content: flex-end; }
     .coach-avatar {
-      width: 36px; height: 36px; border-radius: 999px;
+      width: 38px; height: 38px; border-radius: 999px;
       background: var(--gold);
       display: flex; align-items: center; justify-content: center;
-      font-size: 16px;
+      font-size: 18px;
       flex-shrink: 0;
     }
     .coach-msg.user .coach-avatar { background: var(--purple); }
@@ -503,7 +506,7 @@
       padding: 12px 16px;
       font-size: 14px;
       max-width: 80%;
-      line-height: 1.5;
+      line-height: 1.55;
     }
     .coach-msg.user .coach-bubble {
       background: rgba(250,199,117,0.12);
@@ -514,7 +517,7 @@
       font-size: clamp(28px, 3.5vw, 40px);
       font-weight: 900;
       line-height: 1.1;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.025em;
       margin-bottom: 18px;
     }
     .coach-info p {
@@ -593,6 +596,8 @@
       font-size: 13px;
     }
     footer .logo { display: inline-flex; margin-bottom: 14px; }
+    footer a.foot-link { color: var(--text-3); margin: 0 8px; }
+    footer a.foot-link:hover { color: var(--gold); }
 
     /* ───── Responsive ───── */
     @media (max-width: 900px) {
@@ -628,8 +633,8 @@
   <nav>
     <div class="container nav-inner">
       <a href="#" class="logo">
-        <span class="logo-mark">🐾</span>
-        <span>PawQuest</span>
+        <span class="logo-mark">🐶</span>
+        <span>Pawlo</span>
       </a>
       <a href="#join" class="nav-cta">Join Waitlist</a>
     </div>
@@ -641,11 +646,11 @@
       <div>
         <span class="hero-eyebrow">Coming soon · iOS &amp; Android</span>
         <h1 class="hero-title">
-          Level up your<br />
-          <span class="highlight">dog's life.</span>
+          Your dog's<br />
+          <span class="highlight">personal teacher.</span>
         </h1>
         <p class="hero-sub">
-          The gamified AI dog training app. Earn XP, build streaks, conquer daily quests — turn training into a game your dog actually wants to play.
+          Pawlo turns dog training into a daily 5-minute habit. Bite-size lessons, instant AI feedback, real progress — <strong>like Duolingo, but for dogs.</strong>
         </p>
 
         <form class="email-form" id="hero-form">
@@ -706,8 +711,8 @@
             <div class="phone-mission">
               <div class="phone-mission-icon">🐾</div>
               <div class="phone-mission-text">
-                <div class="phone-mission-title">Daily Training Session</div>
-                <div class="phone-mission-sub">Complete today's program</div>
+                <div class="phone-mission-title">Today's Lesson</div>
+                <div class="phone-mission-sub">Separation Anxiety · Day 4</div>
               </div>
               <div class="phone-mission-xp">+30 XP</div>
             </div>
@@ -728,35 +733,35 @@
   <!-- ───── FEATURES ───── -->
   <section class="s" id="features">
     <div class="container">
-      <div class="section-eyebrow">Why PawQuest</div>
-      <h2 class="section-title">Training that actually sticks — because it's fun.</h2>
+      <div class="section-eyebrow">Why Pawlo</div>
+      <h2 class="section-title">A teacher in your pocket. A friend on the leash.</h2>
       <p class="section-sub">
-        Every dog training app teaches the same tricks. PawQuest is the only one your dog will drag you to.
+        Every dog training app teaches the same tricks. Pawlo is the only one your dog will drag you to.
       </p>
 
       <div class="features-grid">
         <div class="feature-card">
           <div class="feature-icon gold">🏆</div>
           <h3 class="feature-title">XP &amp; Levels</h3>
-          <p class="feature-text">Earn XP for every session, level your dog from Curious Pup all the way to Alpha Quester. Six levels, real progression.</p>
+          <p class="feature-text">Earn XP for every lesson. Level your dog from <em>Curious Pup</em> all the way to <em>Top Dog</em>. Six levels, real progression — just like a language app.</p>
         </div>
 
         <div class="feature-card">
           <div class="feature-icon green">🔥</div>
           <h3 class="feature-title">Daily Streaks</h3>
-          <p class="feature-text">Train every day, build the habit, never break the chain. Streaks are the secret weapon behind every well-trained dog.</p>
+          <p class="feature-text">Train every day, build the habit, never break the chain. Streaks are the secret weapon behind every well-trained dog — and every fluent language learner.</p>
         </div>
 
         <div class="feature-card">
-          <div class="feature-icon purple">🤖</div>
-          <h3 class="feature-title">Built-in AI Coach</h3>
-          <p class="feature-text">Stuck on a behaviour? Ask PawAI. Powered by Claude, trained on dog behaviour science, available 24/7 inside the app.</p>
+          <div class="feature-icon purple">🐶</div>
+          <h3 class="feature-title">Meet Pawlo (your AI teacher)</h3>
+          <p class="feature-text">Pawlo lives inside the app and knows your dog by name. Ask anything — get warm, practical, jargon-free advice. Powered by Claude, available 24/7.</p>
         </div>
 
         <div class="feature-card">
-          <div class="feature-icon coral">🐾</div>
+          <div class="feature-icon coral">📚</div>
           <h3 class="feature-title">Real Programs</h3>
-          <p class="feature-text">Separation anxiety, recall, leash walking, potty training. Step-by-step day plans with voice prompts and instant feedback.</p>
+          <p class="feature-text">Separation anxiety, recall, leash walking, potty training. Step-by-step day plans built by experts — with voice prompts and instant feedback at every step.</p>
         </div>
       </div>
     </div>
@@ -767,49 +772,50 @@
     <div class="container">
       <div class="section-eyebrow">How it works</div>
       <h2 class="section-title">Three steps. Five minutes a day.</h2>
-      <p class="section-sub">No clickers, no jargon, no 90-page PDFs. Just open the app and start.</p>
+      <p class="section-sub">No clickers, no jargon, no 90-page PDFs. Just open the app and let Pawlo do the rest.</p>
 
       <div class="steps-grid">
         <div class="step-card">
           <div class="step-num">1</div>
           <h3 class="step-title">Pick your program</h3>
-          <p class="step-text">Choose what to focus on — separation anxiety, recall, potty training, leash walking, or all of them.</p>
+          <p class="step-text">Choose what to focus on — separation anxiety, recall, potty training, leash walking, or all of them. Pawlo personalizes the plan for your dog's age and breed.</p>
         </div>
         <div class="step-card">
           <div class="step-num">2</div>
           <h3 class="step-title">Train 5 minutes</h3>
-          <p class="step-text">Follow the guided session. Tap to start, voice prompts at every step, AI feedback when you finish.</p>
+          <p class="step-text">Open the daily lesson. Pawlo guides you step-by-step, listens to how it went, and gives instant feedback in plain language.</p>
         </div>
         <div class="step-card">
           <div class="step-num">3</div>
-          <h3 class="step-title">Watch them level up</h3>
-          <p class="step-text">Unlock badges, hit streaks, climb the leaderboard. Real training. Real progress. Real XP.</p>
+          <h3 class="step-title">Watch them grow</h3>
+          <p class="step-text">Unlock badges, hit streaks, climb levels. Real training. Real progress. Real XP — for both of you.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ───── AI COACH ───── -->
+  <!-- ───── PAWLO SHOWCASE ───── -->
   <section class="s">
     <div class="container coach-grid">
       <div class="coach-bubble-wrap">
         <div class="coach-msg user">
-          <div class="coach-bubble">My dog won't stop pulling on the leash 😤</div>
+          <div class="coach-bubble">Roi won't stop pulling on the leash 😤</div>
           <div class="coach-avatar">🧑</div>
         </div>
         <div class="coach-msg">
-          <div class="coach-avatar">🐾</div>
+          <div class="coach-avatar">🐶</div>
           <div class="coach-bubble">
-            Try the "freeze" technique with Roi: the second the leash goes taut, stop walking. Don't pull back, don't talk — just freeze. The walk only continues when the leash is loose. Repeat for 10 minutes today and you'll see a difference by Friday. 🦮
+            Try the "freeze" technique with Roi today: the second the leash goes taut, stop walking. Don't pull back, don't talk — just freeze. The walk only continues when the leash is loose. Repeat for 10 minutes today and you'll see a difference by Friday. You've got this! 🦮
           </div>
         </div>
       </div>
 
       <div class="coach-info">
-        <div class="section-eyebrow" style="text-align:left">Powered by AI</div>
-        <h2>An expert dog trainer in your pocket — 24/7.</h2>
-        <p>PawAI knows your dog's name, breed, level, and training history. Ask anything. Get warm, practical, jargon-free advice in seconds. It's like texting a behaviourist who never sleeps.</p>
-        <div class="built-with">Built with <strong>Claude</strong> by Anthropic</div>
+        <div class="section-eyebrow" style="text-align:left">Meet your teacher</div>
+        <h2>Pawlo. Patient, persistent, never tired.</h2>
+        <p>Pawlo is the friendly mascot at the heart of the app — and the AI teacher who lives inside it. He knows your dog by name, breed, age, and training history. Ask anything. Get warm, practical, jargon-free advice in seconds.</p>
+        <p>It's like texting a behaviourist who never sleeps — and never charges by the hour.</p>
+        <div class="built-with">Powered by <strong>Claude</strong> by Anthropic</div>
       </div>
     </div>
   </section>
@@ -817,16 +823,16 @@
   <!-- ───── ROI SPOTLIGHT ───── -->
   <section class="s">
     <div class="container">
-      <div class="section-eyebrow">First quester</div>
+      <div class="section-eyebrow">First student</div>
       <h2 class="section-title">Meet Roi.</h2>
 
       <div class="roi-card">
         <div class="roi-emoji">🦮</div>
         <div class="roi-title">Roi · Maltichon · London</div>
         <p class="roi-quote">
-          "PawQuest's first official quester. He's currently working on his separation anxiety program, has earned three badges, and is two days into a streak. Curious Pup, soon to be Learning Tail."
+          "Pawlo's first official student. He's currently working through his Separation Anxiety program, has earned three badges, and is two days into a streak. Curious Pup, soon to be Learning Tail."
         </p>
-        <div class="roi-byline">— The PawQuest beta journal</div>
+        <div class="roi-byline">— The Pawlo beta journal</div>
       </div>
     </div>
   </section>
@@ -834,8 +840,8 @@
   <!-- ───── FINAL CTA ───── -->
   <section class="s final-cta" id="join">
     <div class="container">
-      <h2>Be one of the first questers.</h2>
-      <p>Join the waitlist. We'll let you know the moment PawQuest hits the App Store.</p>
+      <h2>Be one of the first to meet Pawlo.</h2>
+      <p>Join the waitlist. We'll let you know the moment Pawlo lands in the App Store.</p>
 
       <form class="email-form" id="footer-form">
         <input type="email" name="email" placeholder="you@example.com" required autocomplete="email" />
@@ -849,10 +855,13 @@
   <footer>
     <div class="container">
       <a href="#" class="logo">
-        <span class="logo-mark">🐾</span>
-        <span>PawQuest</span>
+        <span class="logo-mark">🐶</span>
+        <span>Pawlo</span>
       </a>
-      <div>© 2026 PawQuest · Level up your dog's life</div>
+      <div>© 2026 Pawlo · Your dog's personal teacher</div>
+      <div style="margin-top:8px">
+        <a class="foot-link" href="https://pawlo.so">pawlo.so</a>
+      </div>
     </div>
   </footer>
 
@@ -865,7 +874,6 @@
       statusEl.className = "form-status";
       statusEl.textContent = "";
 
-      // Basic email regex (HTML5 already validates, this is a backup)
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         statusEl.className = "form-status error";
         statusEl.textContent = "Please enter a valid email.";
@@ -895,9 +903,8 @@
 
         if (res.ok) {
           statusEl.className = "form-status success";
-          statusEl.textContent = "🎉 You're in! We'll be in touch.";
+          statusEl.textContent = "🎉 You're in! Pawlo will be in touch.";
           btn.textContent = "✓ Joined";
-          // Don't re-enable
           return;
         }
 
@@ -908,7 +915,6 @@
           return;
         }
 
-        // Try to read body
         let detail = "";
         try {
           const data = await res.json();

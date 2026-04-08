@@ -15,7 +15,7 @@ export default function ModalScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
       <Text style={styles.emoji}>🐾</Text>
-      <Text style={styles.title}>PawQuest</Text>
+      <Text style={styles.title}>Pawlo</Text>
       <Text style={styles.subtitle}>
         Something went wrong.{"\n"}Let's head back.
       </Text>

@@ -1,6 +1,6 @@
 import { Platform } from "react-native";
 
-// ─── PawQuest Core Palette ─────────────────────────────────────────────────
+// ─── Pawlo Core Palette ─────────────────────────────────────────────────────
 export const Palette = {
   // Brand
   questNight: "#0F0B2E", // Primary dark bg
@@ -193,6 +193,6 @@ export const XP = {
     { level: 3, minXP: 500, title: "Good Boy/Girl" },
     { level: 4, minXP: 1000, title: "Focused Paw" },
     { level: 5, minXP: 2000, title: "Training Pro" },
-    { level: 6, minXP: 3500, title: "Alpha Quester" },
+    { level: 6, minXP: 3500, title: "Top Dog" },
   ],
 };

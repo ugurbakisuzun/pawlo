@@ -205,12 +205,12 @@ export default function SessionScreen() {
         body: {
           model: "claude-haiku-4-5-20251001",
           max_tokens: 150,
-          system: `You are PawAI, a dog behaviour coach inside PawQuest.
+          system: `You are Pawlo — the friendly dog teacher mascot at the heart of the Pawlo app. You're warm, encouraging, and a little playful, like the most patient dog trainer the user has ever met.
 Dog: ${dog?.name ?? "the dog"}, ${dog?.breed ?? "unknown breed"}, Level ${dog?.level ?? 1}.
 Program: ${programTitle} · Day ${dayData.day} — ${dayData.title}.
 Step ${step.number}: ${step.instruction}
 Question: ${step.voice_prompt}
-Analyse in 2 short sentences: what the behaviour indicates, and one actionable tip. Be warm and jargon-free.`,
+Analyse in 2 short sentences: what the behaviour indicates, and one actionable tip. Be warm and jargon-free. Use the dog's name.`,
           messages: [{ role: "user", content: transcript }],
         },
       });
@@ -514,7 +514,7 @@ Analyse in 2 short sentences: what the behaviour indicates, and one actionable t
                         color={Palette.levelPurple}
                       />
                       <Text style={styles.analysingText}>
-                        PawAI is analysing…
+                        Pawlo is thinking…
                       </Text>
                     </View>
                   )}
@@ -531,7 +531,7 @@ Analyse in 2 short sentences: what the behaviour indicates, and one actionable t
                 <View style={styles.feedbackCard}>
                   <View style={styles.feedbackHeader}>
                     <Text style={styles.feedbackIcon}>🤖</Text>
-                    <Text style={styles.feedbackTitle}>PawAI Analysis</Text>
+                    <Text style={styles.feedbackTitle}>Pawlo says</Text>
                   </View>
                   <Text style={styles.feedbackTranscript}>
                     "{analysis.transcript}"

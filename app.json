@@ -1,24 +1,24 @@
 {
   "expo": {
-    "name": "PawQuest",
-    "slug": "pawquest",
+    "name": "Pawlo",
+    "slug": "pawlo",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "pawquest",
+    "scheme": "pawlo",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ugurbakisuzun.pawquest",
+      "bundleIdentifier": "com.ugurbakisuzun.pawlo",
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "PawQuest uses your microphone so you can describe your dog's behaviour hands-free during training sessions.",
-        "NSSpeechRecognitionUsageDescription": "PawQuest converts your voice to text so the AI coach can analyse your training session in real time.",
-        "NSLocationWhenInUseUsageDescription": "PawQuest tracks your location during dog walks to measure distance and award XP."
+        "NSMicrophoneUsageDescription": "Pawlo uses your microphone so you can describe your dog's behaviour hands-free during training sessions.",
+        "NSSpeechRecognitionUsageDescription": "Pawlo converts your voice to text so Pawlo (your dog's teacher) can give you instant feedback on every session.",
+        "NSLocationWhenInUseUsageDescription": "Pawlo tracks your location during dog walks to measure distance and award XP."
       }
     },
     "android": {
-      "package": "com.ugurbakisuzun.pawquest",
+      "package": "com.ugurbakisuzun.pawlo",
       "versionCode": 1,
       "permissions": ["RECORD_AUDIO", "ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"],
       "adaptiveIcon": {
@@ -52,7 +52,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "PawQuest tracks your location during dog walks to measure distance and award XP."
+          "locationWhenInUsePermission": "Pawlo tracks your location during dog walks to measure distance and award XP."
         }
       ]
     ],
