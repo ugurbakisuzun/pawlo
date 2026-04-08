@@ -1,0 +1,1950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PawQuest — App Mockup</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #0f0f13;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  h1.page-title {
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #a78bfa, #60a5fa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .subtitle {
+    color: #71717a;
+    font-size: 14px;
+    margin-bottom: 32px;
+  }
+
+  .screen-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 32px;
+    justify-content: center;
+    max-width: 800px;
+  }
+
+  .screen-nav button {
+    padding: 8px 16px;
+    border: 1px solid #27272a;
+    background: #18181b;
+    color: #a1a1aa;
+    border-radius: 20px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .screen-nav button:hover { border-color: #a78bfa; color: #a78bfa; }
+  .screen-nav button.active { background: #a78bfa; color: #fff; border-color: #a78bfa; }
+
+  .phone-frame {
+    width: 375px;
+    height: 812px;
+    background: #111113;
+    border-radius: 40px;
+    border: 3px solid #27272a;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+  }
+
+  .screen { display: none; height: 100%; overflow-y: auto; position: relative; }
+  .screen.active { display: flex; flex-direction: column; }
+  .screen::-webkit-scrollbar { display: none; }
+
+  /* Status bar */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 24px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .status-bar .time { font-weight: 700; }
+  .status-icons { display: flex; gap: 4px; align-items: center; }
+
+  /* Bottom Nav */
+  .bottom-nav {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 8px 0 24px;
+    background: #111113;
+    border-top: 1px solid #1e1e24;
+    flex-shrink: 0;
+  }
+
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: #52525b;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .nav-item.active { color: #a78bfa; }
+  .nav-item .nav-icon { font-size: 22px; }
+
+  /* Common */
+  .content { flex: 1; padding: 0 20px; overflow-y: auto; }
+  .content::-webkit-scrollbar { display: none; }
+
+  .card {
+    background: #1a1a20;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid #27272a;
+  }
+
+  .card-glow {
+    background: linear-gradient(135deg, #1e1545, #1a1a20);
+    border: 1px solid #3b2d6e;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .badge-purple { background: rgba(167,139,250,0.15); color: #a78bfa; }
+  .badge-green { background: rgba(52,211,153,0.15); color: #34d399; }
+  .badge-amber { background: rgba(251,191,36,0.15); color: #fbbf24; }
+  .badge-blue { background: rgba(96,165,250,0.15); color: #60a5fa; }
+  .badge-red { background: rgba(248,113,113,0.15); color: #f87171; }
+
+  .progress-bar {
+    height: 6px;
+    background: #27272a;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #a78bfa, #7c3aed);
+    color: #fff;
+  }
+
+  .btn-secondary {
+    background: #27272a;
+    color: #e4e4e7;
+  }
+
+  .section-title {
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+
+  .avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+
+  /* ====== SCREEN 1: ONBOARDING ====== */
+  .onboarding-bg {
+    background: linear-gradient(180deg, #1a1040 0%, #111113 60%);
+    padding: 0;
+  }
+
+  .onboarding-hero {
+    text-align: center;
+    padding: 40px 24px 20px;
+  }
+
+  .onboarding-hero .logo { font-size: 60px; margin-bottom: 16px; }
+  .onboarding-hero h2 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+  .onboarding-hero p { color: #a1a1aa; font-size: 15px; line-height: 1.5; }
+
+  .onboarding-features {
+    padding: 0 24px;
+    margin-bottom: 24px;
+  }
+
+  .feature-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid #1e1e28;
+  }
+
+  .feature-row:last-child { border-bottom: none; }
+  .feature-icon { font-size: 28px; width: 40px; text-align: center; }
+  .feature-text h4 { font-size: 14px; font-weight: 600; }
+  .feature-text p { font-size: 12px; color: #71717a; margin-top: 2px; }
+
+  .onboarding-actions { padding: 0 24px 40px; }
+  .onboarding-actions .btn { margin-bottom: 12px; }
+  .login-link { text-align: center; color: #a78bfa; font-size: 14px; }
+
+  /* ====== SCREEN 2: DOG QUIZ ====== */
+  .quiz-progress {
+    display: flex;
+    gap: 4px;
+    padding: 0 24px;
+    margin-bottom: 24px;
+  }
+
+  .quiz-dot {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: #27272a;
+  }
+
+  .quiz-dot.filled { background: #a78bfa; }
+  .quiz-dot.current { background: linear-gradient(90deg, #a78bfa, #60a5fa); }
+
+  .quiz-question {
+    padding: 0 24px;
+    margin-bottom: 20px;
+  }
+
+  .quiz-question h3 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+  .quiz-question p { color: #71717a; font-size: 14px; }
+
+  .quiz-options { padding: 0 24px; }
+
+  .quiz-option {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+    background: #1a1a20;
+    border: 1px solid #27272a;
+    border-radius: 14px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .quiz-option:hover { border-color: #a78bfa; }
+  .quiz-option.selected { border-color: #a78bfa; background: #1e1545; }
+  .quiz-option .opt-icon { font-size: 28px; }
+  .quiz-option .opt-text { font-size: 15px; font-weight: 500; }
+
+  /* ====== SCREEN 3: DASHBOARD ====== */
+  .dash-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 20px 12px;
+  }
+
+  .dash-header-left h2 {
+    font-size: 22px;
+    font-weight: 800;
+  }
+
+  .dash-header-left p {
+    font-size: 13px;
+    color: #71717a;
+    margin-top: 2px;
+  }
+
+  .dash-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #a78bfa, #7c3aed);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+  }
+
+  .xp-section {
+    padding: 0 20px;
+    margin-bottom: 16px;
+  }
+
+  .xp-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .xp-level {
+    font-size: 13px;
+    font-weight: 700;
+    color: #a78bfa;
+  }
+
+  .xp-amount {
+    font-size: 12px;
+    color: #71717a;
+  }
+
+  .xp-bar {
+    height: 8px;
+    background: #27272a;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .xp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #a78bfa, #60a5fa);
+    border-radius: 4px;
+    width: 65%;
+  }
+
+  .stats-row {
+    display: flex;
+    gap: 10px;
+    padding: 0 20px;
+    margin-bottom: 16px;
+  }
+
+  .stat-card {
+    flex: 1;
+    background: #1a1a20;
+    border-radius: 14px;
+    padding: 14px 12px;
+    text-align: center;
+    border: 1px solid #27272a;
+  }
+
+  .stat-value {
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 2px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: #71717a;
+    font-weight: 500;
+  }
+
+  .today-card {
+    margin: 0 20px 12px;
+    background: linear-gradient(135deg, #1e1545, #1a1040);
+    border: 1px solid #3b2d6e;
+    border-radius: 18px;
+    padding: 18px;
+  }
+
+  .today-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #a78bfa;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+
+  .today-title {
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .today-desc {
+    font-size: 13px;
+    color: #a1a1aa;
+    margin-bottom: 14px;
+    line-height: 1.4;
+  }
+
+  .today-meta {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+
+  .today-meta span {
+    font-size: 12px;
+    color: #71717a;
+  }
+
+  .btn-sm {
+    padding: 10px 20px;
+    font-size: 14px;
+    border-radius: 12px;
+  }
+
+  .quick-actions {
+    display: flex;
+    gap: 10px;
+    padding: 0 20px;
+    margin-bottom: 16px;
+  }
+
+  .quick-btn {
+    flex: 1;
+    background: #1a1a20;
+    border: 1px solid #27272a;
+    border-radius: 14px;
+    padding: 14px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .quick-btn:hover { border-color: #a78bfa; transform: translateY(-2px); }
+  .quick-btn .qb-icon { font-size: 26px; margin-bottom: 6px; }
+  .quick-btn .qb-text { font-size: 12px; font-weight: 600; color: #d4d4d8; }
+
+  /* ====== SCREEN 4: PROGRAMS ====== */
+  .program-card {
+    background: #1a1a20;
+    border: 1px solid #27272a;
+    border-radius: 18px;
+    padding: 18px;
+    margin-bottom: 12px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+
+  .program-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    flex-shrink: 0;
+  }
+
+  .program-info { flex: 1; }
+  .program-info h4 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .program-info p { font-size: 12px; color: #71717a; line-height: 1.4; }
+
+  .program-meta {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .program-meta span {
+    font-size: 11px;
+    color: #a1a1aa;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* ====== SCREEN 5: SESSION ====== */
+  .session-header {
+    text-align: center;
+    padding: 10px 24px 16px;
+  }
+
+  .session-header h3 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .session-header p {
+    font-size: 13px;
+    color: #71717a;
+  }
+
+  .session-progress-ring {
+    display: flex;
+    justify-content: center;
+    margin: 10px 0 20px;
+  }
+
+  .ring-container {
+    position: relative;
+    width: 120px;
+    height: 120px;
+  }
+
+  .ring-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+
+  .ring-text .step-num { font-size: 28px; font-weight: 800; }
+  .ring-text .step-of { font-size: 11px; color: #71717a; }
+
+  .step-card {
+    background: #1a1a20;
+    border: 1px solid #27272a;
+    border-radius: 16px;
+    padding: 16px;
+    margin: 0 20px 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .step-num-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #27272a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .step-num-circle.done {
+    background: linear-gradient(135deg, #34d399, #059669);
+  }
+
+  .step-num-circle.current {
+    background: linear-gradient(135deg, #a78bfa, #7c3aed);
+  }
+
+  .step-info h4 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .step-info p { font-size: 12px; color: #71717a; line-height: 1.4; }
+
+  .step-timer {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .timer-badge {
+    background: rgba(167,139,250,0.15);
+    color: #a78bfa;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .clicker-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 16px 20px;
+    margin: 0 20px 10px;
+    background: linear-gradient(135deg, #1e1545, #1a1040);
+    border: 1px solid #3b2d6e;
+    border-radius: 16px;
+  }
+
+  .clicker-btn {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #a78bfa, #7c3aed);
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(124,58,237,0.4);
+    transition: all 0.15s;
+  }
+
+  .clicker-btn:active { transform: scale(0.92); }
+  .clicker-label { font-size: 13px; color: #a1a1aa; }
+  .clicker-count { font-size: 20px; font-weight: 800; color: #a78bfa; }
+
+  /* ====== SCREEN 6: WALK ====== */
+  .walk-map {
+    height: 220px;
+    background: linear-gradient(180deg, #1a2040, #111125);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .walk-map-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(167,139,250,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(167,139,250,0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .walk-map-path {
+    width: 200px;
+    height: 120px;
+    border: 3px solid #a78bfa;
+    border-radius: 60px 60px 20px 20px;
+    position: relative;
+    opacity: 0.6;
+  }
+
+  .walk-map-dot {
+    width: 14px;
+    height: 14px;
+    background: #a78bfa;
+    border-radius: 50%;
+    position: absolute;
+    bottom: -7px;
+    right: 30px;
+    box-shadow: 0 0 12px rgba(167,139,250,0.6);
+  }
+
+  .walk-stats {
+    display: flex;
+    justify-content: space-around;
+    padding: 16px 20px;
+    background: #1a1a20;
+    border-bottom: 1px solid #27272a;
+  }
+
+  .walk-stat { text-align: center; }
+  .walk-stat-val { font-size: 24px; font-weight: 800; }
+  .walk-stat-unit { font-size: 11px; color: #71717a; }
+
+  .walk-controls {
+    display: flex;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .walk-start-btn {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #34d399, #059669);
+    border: none;
+    font-size: 32px;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(5,150,105,0.3);
+  }
+
+  /* ====== SCREEN 7: HEALTH ====== */
+  .health-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 0 20px;
+    margin-bottom: 16px;
+  }
+
+  .health-tab {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    background: #1a1a20;
+    border: 1px solid #27272a;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #71717a;
+    cursor: pointer;
+  }
+
+  .health-tab.active {
+    background: rgba(167,139,250,0.15);
+    border-color: #a78bfa;
+    color: #a78bfa;
+  }
+
+  .health-event {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: #1a1a20;
+    border: 1px solid #27272a;
+    border-radius: 14px;
+    margin: 0 20px 8px;
+  }
+
+  .health-event-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+  }
+
+  .health-event-info { flex: 1; }
+  .health-event-info h4 { font-size: 14px; font-weight: 600; }
+  .health-event-info p { font-size: 12px; color: #71717a; }
+  .health-event-date { font-size: 11px; color: #a1a1aa; }
+
+  /* ====== SCREEN 8: BADGES ====== */
+  .badges-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    padding: 0 20px;
+    margin-bottom: 16px;
+  }
+
+  .badge-card {
+    background: #1a1a20;
+    border: 1px solid #27272a;
+    border-radius: 16px;
+    padding: 16px 10px;
+    text-align: center;
+    transition: all 0.2s;
+  }
+
+  .badge-card.earned {
+    border-color: #a78bfa;
+    background: linear-gradient(180deg, #1e1545, #1a1a20);
+  }
+
+  .badge-card.locked { opacity: 0.4; }
+
+  .badge-emoji { font-size: 36px; margin-bottom: 8px; }
+  .badge-name { font-size: 11px; font-weight: 600; }
+  .badge-desc { font-size: 10px; color: #71717a; margin-top: 2px; }
+
+  /* ====== SCREEN 9: AI ADVISOR ====== */
+  .chat-messages {
+    flex: 1;
+    padding: 12px 20px;
+    overflow-y: auto;
+  }
+
+  .chat-msg {
+    max-width: 80%;
+    padding: 12px 16px;
+    border-radius: 18px;
+    margin-bottom: 10px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .chat-msg.ai {
+    background: #1a1a20;
+    border: 1px solid #27272a;
+    border-bottom-left-radius: 4px;
+  }
+
+  .chat-msg.user {
+    background: linear-gradient(135deg, #7c3aed, #a78bfa);
+    margin-left: auto;
+    border-bottom-right-radius: 4px;
+  }
+
+  .chat-input-bar {
+    display: flex;
+    gap: 10px;
+    padding: 12px 20px 28px;
+    border-top: 1px solid #1e1e24;
+    align-items: center;
+  }
+
+  .chat-input {
+    flex: 1;
+    padding: 12px 16px;
+    background: #1a1a20;
+    border: 1px solid #27272a;
+    border-radius: 24px;
+    color: #fff;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+  }
+
+  .chat-input::placeholder { color: #52525b; }
+
+  .mic-btn, .send-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .mic-btn { background: #27272a; }
+  .send-btn { background: linear-gradient(135deg, #a78bfa, #7c3aed); }
+
+  /* ====== SCREEN 10: PROFILE ====== */
+  .profile-header {
+    text-align: center;
+    padding: 20px 24px;
+  }
+
+  .profile-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    margin: 0 auto 12px;
+    border: 3px solid #27272a;
+  }
+
+  .profile-name { font-size: 20px; font-weight: 800; }
+  .profile-breed { font-size: 13px; color: #71717a; margin-top: 2px; }
+
+  .profile-stats {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-top: 16px;
+  }
+
+  .profile-stat { text-align: center; }
+  .profile-stat-val { font-size: 18px; font-weight: 800; }
+  .profile-stat-label { font-size: 11px; color: #71717a; }
+
+  .menu-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 20px;
+    border-bottom: 1px solid #1e1e24;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .menu-item:hover { background: #1a1a20; }
+  .menu-icon { font-size: 20px; width: 32px; text-align: center; }
+  .menu-text { flex: 1; font-size: 15px; font-weight: 500; }
+  .menu-arrow { color: #52525b; font-size: 14px; }
+
+  /* ====== SCREEN 11: TRICKS ====== */
+  .trick-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: #1a1a20;
+    border: 1px solid #27272a;
+    border-radius: 16px;
+    margin: 0 20px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .trick-card:hover { border-color: #3b2d6e; }
+
+  .trick-card.completed {
+    border-color: #065f46;
+    background: linear-gradient(135deg, #0a2e1f, #1a1a20);
+  }
+
+  .trick-icon { font-size: 32px; }
+
+  .trick-info { flex: 1; }
+  .trick-info h4 { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .trick-info p { font-size: 12px; color: #71717a; }
+
+  .trick-xp {
+    font-size: 13px;
+    font-weight: 700;
+    color: #a78bfa;
+  }
+
+  .trick-check {
+    font-size: 18px;
+  }
+
+  .filter-row {
+    display: flex;
+    gap: 8px;
+    padding: 0 20px;
+    margin-bottom: 14px;
+    overflow-x: auto;
+  }
+
+  .filter-chip {
+    padding: 6px 14px;
+    background: #1a1a20;
+    border: 1px solid #27272a;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #a1a1aa;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .filter-chip.active {
+    background: rgba(167,139,250,0.15);
+    border-color: #a78bfa;
+    color: #a78bfa;
+  }
+
+  /* ====== SCREEN: LEADERBOARD ====== */
+  .leaderboard-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    border-bottom: 1px solid #1e1e24;
+  }
+
+  .lb-rank {
+    font-size: 16px;
+    font-weight: 800;
+    width: 28px;
+    text-align: center;
+    color: #71717a;
+  }
+
+  .lb-rank.gold { color: #fbbf24; }
+  .lb-rank.silver { color: #d1d5db; }
+  .lb-rank.bronze { color: #d97706; }
+
+  .lb-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+  }
+
+  .lb-info { flex: 1; }
+  .lb-name { font-size: 14px; font-weight: 600; }
+  .lb-dog { font-size: 11px; color: #71717a; }
+  .lb-xp { font-size: 14px; font-weight: 700; color: #a78bfa; }
+
+  /* Annotation */
+  .annotation {
+    margin: 12px 20px;
+    padding: 12px 14px;
+    background: rgba(96,165,250,0.08);
+    border-left: 3px solid #60a5fa;
+    border-radius: 0 10px 10px 0;
+    font-size: 12px;
+    color: #93c5fd;
+    line-height: 1.5;
+  }
+
+  .new-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    background: linear-gradient(135deg, #f43f5e, #e11d48);
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+
+<h1 class="page-title">PawQuest — Redesign Mockup</h1>
+<p class="subtitle">Dogo-inspired, gamification-first dog training app</p>
+
+<div class="screen-nav" id="screenNav">
+  <button class="active" onclick="showScreen('onboarding')">Onboarding</button>
+  <button onclick="showScreen('quiz')">Dog Quiz</button>
+  <button onclick="showScreen('dashboard')">Dashboard</button>
+  <button onclick="showScreen('programs')">Programs</button>
+  <button onclick="showScreen('session')">Session</button>
+  <button onclick="showScreen('tricks')">Tricks</button>
+  <button onclick="showScreen('walk')">Walk <span class="new-badge">NEW</span></button>
+  <button onclick="showScreen('health')">Health <span class="new-badge">NEW</span></button>
+  <button onclick="showScreen('badges')">Badges <span class="new-badge">NEW</span></button>
+  <button onclick="showScreen('leaderboard')">Leaderboard <span class="new-badge">NEW</span></button>
+  <button onclick="showScreen('advisor')">AI Advisor</button>
+  <button onclick="showScreen('profile')">Profile</button>
+</div>
+
+<div class="phone-frame">
+
+  <!-- ========== ONBOARDING ========== -->
+  <div class="screen active" id="screen-onboarding">
+    <div class="status-bar"><span class="time">9:41</span><div class="status-icons">📶 🔋</div></div>
+    <div class="onboarding-bg" style="flex:1; display:flex; flex-direction:column;">
+      <div class="onboarding-hero">
+        <div class="logo">🐾</div>
+        <h2>PawQuest</h2>
+        <p style="font-size:16px; color:#a78bfa; font-weight:600; margin-bottom:8px;">Level up your dog's life</p>
+        <p>AI-powered training with XP, levels, streaks & daily quests. Make every session count.</p>
+      </div>
+      <div class="onboarding-features">
+        <div class="feature-row">
+          <div class="feature-icon">🎮</div>
+          <div class="feature-text">
+            <h4>Gamified Training</h4>
+            <p>Earn XP, level up, unlock badges</p>
+          </div>
+        </div>
+        <div class="feature-row">
+          <div class="feature-icon">🤖</div>
+          <div class="feature-text">
+            <h4>AI Coach</h4>
+            <p>Real-time feedback on your sessions</p>
+          </div>
+        </div>
+        <div class="feature-row">
+          <div class="feature-icon">📋</div>
+          <div class="feature-text">
+            <h4>Structured Programs</h4>
+            <p>Separation anxiety, obedience & more</p>
+          </div>
+        </div>
+        <div class="feature-row">
+          <div class="feature-icon">🏥</div>
+          <div class="feature-text">
+            <h4>Health Tracking</h4>
+            <p>Vaccinations, weight, medications</p>
+          </div>
+        </div>
+        <div class="feature-row">
+          <div class="feature-icon">🚶</div>
+          <div class="feature-text">
+            <h4>Walk Tracker</h4>
+            <p>GPS walks with XP rewards</p>
+          </div>
+        </div>
+      </div>
+      <div class="onboarding-actions">
+        <button class="btn btn-primary">Get Started</button>
+        <button class="btn btn-secondary">I already have an account</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== DOG QUIZ ========== -->
+  <div class="screen" id="screen-quiz">
+    <div class="status-bar"><span class="time">9:41</span><div class="status-icons">📶 🔋</div></div>
+    <div style="padding-top:12px;">
+      <div class="quiz-progress">
+        <div class="quiz-dot filled"></div>
+        <div class="quiz-dot filled"></div>
+        <div class="quiz-dot current"></div>
+        <div class="quiz-dot"></div>
+        <div class="quiz-dot"></div>
+        <div class="quiz-dot"></div>
+      </div>
+      <div class="quiz-question">
+        <h3>What challenges do you face?</h3>
+        <p>Select all that apply — we'll personalize your program</p>
+      </div>
+      <div class="quiz-options">
+        <div class="quiz-option selected">
+          <span class="opt-icon">😰</span>
+          <span class="opt-text">Separation anxiety</span>
+        </div>
+        <div class="quiz-option">
+          <span class="opt-icon">🦴</span>
+          <span class="opt-text">Leash pulling</span>
+        </div>
+        <div class="quiz-option selected">
+          <span class="opt-icon">🐕</span>
+          <span class="opt-text">Not coming when called</span>
+        </div>
+        <div class="quiz-option">
+          <span class="opt-icon">🦷</span>
+          <span class="opt-text">Biting / chewing</span>
+        </div>
+        <div class="quiz-option">
+          <span class="opt-icon">🏃</span>
+          <span class="opt-text">Jumping on people</span>
+        </div>
+        <div class="quiz-option">
+          <span class="opt-icon">🚽</span>
+          <span class="opt-text">Potty training</span>
+        </div>
+      </div>
+      <div style="padding: 20px 24px;">
+        <button class="btn btn-primary">Continue</button>
+      </div>
+      <div class="annotation">
+        <strong>NEW:</strong> 6-step quiz (name, breed, age, goals, challenges, experience) — personalizes program recommendations like Dogo, but feeds into our AI advisor for smarter coaching.
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== DASHBOARD ========== -->
+  <div class="screen" id="screen-dashboard">
+    <div class="status-bar"><span class="time">9:41</span><div class="status-icons">📶 🔋</div></div>
+    <div class="dash-header">
+      <div class="dash-header-left">
+        <h2>Hey Katie! 👋</h2>
+        <p>Roi is ready to train</p>
+      </div>
+      <div class="dash-avatar">🐶</div>
+    </div>
+
+    <div class="xp-section">
+      <div class="xp-header">
+        <span class="xp-level">⭐ Level 3 — Good Boy</span>
+        <span class="xp-amount">650 / 1000 XP</span>
+      </div>
+      <div class="xp-bar"><div class="xp-fill" style="width:65%"></div></div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-value" style="color:#f87171">7🔥</div>
+        <div class="stat-label">Streak</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" style="color:#a78bfa">650</div>
+        <div class="stat-label">Total XP</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" style="color:#34d399">5</div>
+        <div class="stat-label">Tricks</div>
+      </div>
+    </div>
+
+    <div class="today-card">
+      <div class="today-label">🎯 TODAY'S MISSION</div>
+      <div class="today-title">Day 8: Extended Departures</div>
+      <div class="today-desc">Practice 3-minute absences with calm returns. Build confidence progressively.</div>
+      <div class="today-meta">
+        <span>⏱ ~10 min</span>
+        <span>⭐ 130 XP</span>
+        <span>📋 6 steps</span>
+      </div>
+      <button class="btn btn-primary btn-sm">Start Session →</button>
+    </div>
+
+    <div class="quick-actions">
+      <div class="quick-btn">
+        <div class="qb-icon">🎯</div>
+        <div class="qb-text">Quick Trick</div>
+      </div>
+      <div class="quick-btn">
+        <div class="qb-icon">🚶</div>
+        <div class="qb-text">Walk</div>
+      </div>
+      <div class="quick-btn">
+        <div class="qb-icon">🤖</div>
+        <div class="qb-text">Ask AI</div>
+      </div>
+      <div class="quick-btn">
+        <div class="qb-icon">🏥</div>
+        <div class="qb-text">Health</div>
+      </div>
+    </div>
+
+    <div style="padding: 0 20px;">
+      <div class="section-title">Recent Badges</div>
+    </div>
+    <div style="display:flex; gap:10px; padding:0 20px; margin-bottom:16px; overflow-x:auto;">
+      <div style="min-width:90px; text-align:center; background:#1a1a20; border:1px solid #3b2d6e; border-radius:14px; padding:12px 8px;">
+        <div style="font-size:28px; margin-bottom:4px;">🏆</div>
+        <div style="font-size:10px; font-weight:600;">First Session</div>
+      </div>
+      <div style="min-width:90px; text-align:center; background:#1a1a20; border:1px solid #3b2d6e; border-radius:14px; padding:12px 8px;">
+        <div style="font-size:28px; margin-bottom:4px;">🔥</div>
+        <div style="font-size:10px; font-weight:600;">7-Day Streak</div>
+      </div>
+      <div style="min-width:90px; text-align:center; background:#1a1a20; border:1px solid #3b2d6e; border-radius:14px; padding:12px 8px;">
+        <div style="font-size:28px; margin-bottom:4px;">🎓</div>
+        <div style="font-size:10px; font-weight:600;">5 Tricks</div>
+      </div>
+      <div style="min-width:90px; text-align:center; background:#1a1a20; border:1px solid #27272a; border-radius:14px; padding:12px 8px; opacity:0.3;">
+        <div style="font-size:28px; margin-bottom:4px;">🔒</div>
+        <div style="font-size:10px; font-weight:600;">Level 5</div>
+      </div>
+    </div>
+
+    <div class="annotation">
+      <strong>UPDATED:</strong> Quick actions row for instant access to Walk, Tricks, AI & Health. Badge carousel on dashboard. Stats are more prominent.
+    </div>
+
+    <div style="height:8px;"></div>
+    <div class="bottom-nav">
+      <div class="nav-item active"><div class="nav-icon">🏠</div>Home</div>
+      <div class="nav-item"><div class="nav-icon">🎯</div>Train</div>
+      <div class="nav-item"><div class="nav-icon">🚶</div>Walk</div>
+      <div class="nav-item"><div class="nav-icon">🤖</div>AI</div>
+      <div class="nav-item"><div class="nav-icon">👤</div>Profile</div>
+    </div>
+  </div>
+
+  <!-- ========== PROGRAMS ========== -->
+  <div class="screen" id="screen-programs">
+    <div class="status-bar"><span class="time">9:41</span><div class="status-icons">📶 🔋</div></div>
+    <div style="padding:8px 20px 4px;"><h2 style="font-size:22px; font-weight:800;">Training Programs</h2></div>
+    <div style="padding:4px 20px 12px;"><p style="font-size:13px; color:#71717a;">Structured courses built by experts</p></div>
+
+    <div class="filter-row">
+      <div class="filter-chip active">All</div>
+      <div class="filter-chip">Behavior</div>
+      <div class="filter-chip">Obedience</div>
+      <div class="filter-chip">Puppy</div>
+      <div class="filter-chip">Advanced</div>
+    </div>
+
+    <div style="padding: 0 20px;">
+      <div class="program-card" style="border-color:#3b2d6e;">
+        <div class="program-icon" style="background:rgba(167,139,250,0.15);">😰</div>
+        <div class="program-info">
+          <h4>Home Alone <span class="badge badge-purple">Active</span></h4>
+          <p>21-day separation anxiety program</p>
+          <div class="progress-bar"><div class="progress-fill" style="width:38%; background:linear-gradient(90deg,#a78bfa,#60a5fa);"></div></div>
+          <div class="program-meta"><span>📅 Day 8/21</span><span>⭐ 650 XP earned</span></div>
+        </div>
+      </div>
+
+      <div class="program-card">
+        <div class="program-icon" style="background:rgba(52,211,153,0.15);">🦮</div>
+        <div class="program-info">
+          <h4>Leash Walking <span class="new-badge">NEW</span></h4>
+          <p>Stop pulling, walk calmly on leash</p>
+          <div class="program-meta"><span>📅 14 days</span><span>⭐ 1200 XP</span></div>
+        </div>
+      </div>
+
+      <div class="program-card">
+        <div class="program-icon" style="background:rgba(251,191,36,0.15);">📣</div>
+        <div class="program-info">
+          <h4>Perfect Recall <span class="new-badge">NEW</span></h4>
+          <p>Reliable come-when-called in any situation</p>
+          <div class="program-meta"><span>📅 14 days</span><span>⭐ 1000 XP</span></div>
+        </div>
+      </div>
+
+      <div class="program-card">
+        <div class="program-icon" style="background:rgba(248,113,113,0.15);">🚽</div>
+        <div class="program-info">
+          <h4>Potty Training <span class="new-badge">NEW</span></h4>
+          <p>Establish reliable bathroom routines</p>
+          <div class="program-meta"><span>📅 10 days</span><span>⭐ 800 XP</span></div>
+        </div>
+      </div>
+
+      <div class="program-card">
+        <div class="program-icon" style="background:rgba(96,165,250,0.15);">🐕</div>
+        <div class="program-info">
+          <h4>Puppy Foundations <span class="new-badge">NEW</span></h4>
+          <p>Essential skills for new puppies</p>
+          <div class="program-meta"><span>📅 21 days</span><span>⭐ 1500 XP</span></div>
+        </div>
+      </div>
+
+      <div class="program-card">
+        <div class="program-icon" style="background:rgba(167,139,250,0.15);">🏢</div>
+        <div class="program-info">
+          <h4>Office Dog</h4>
+          <p>Workplace behavior & manners</p>
+          <div class="program-meta"><span>📅 14 days</span><span>⭐ 1000 XP</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="annotation">
+      <strong>NEW:</strong> Multiple training programs (Dogo has 12). Category filter tabs. Progress shown on active programs. Each program = structured daily lessons with XP rewards.
+    </div>
+
+    <div style="height:12px;"></div>
+    <div class="bottom-nav">
+      <div class="nav-item"><div class="nav-icon">🏠</div>Home</div>
+      <div class="nav-item active"><div class="nav-icon">🎯</div>Train</div>
+      <div class="nav-item"><div class="nav-icon">🚶</div>Walk</div>
+      <div class="nav-item"><div class="nav-icon">🤖</div>AI</div>
+      <div class="nav-item"><div class="nav-icon">👤</div>Profile</div>
+    </div>
+  </div>
+
+  <!-- ========== SESSION ========== -->
+  <div class="screen" id="screen-session">
+    <div class="status-bar"><span class="time">9:41</span><div class="status-icons">📶 🔋</div></div>
+    <div class="session-header">
+      <p style="color:#a78bfa; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:1px;">Day 8 of 21</p>
+      <h3>Extended Departures</h3>
+      <p>Build up to 3-minute absences</p>
+    </div>
+
+    <div class="session-progress-ring">
+      <div class="ring-container">
+        <svg width="120" height="120" viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="52" stroke="#27272a" stroke-width="8" fill="none"/>
+          <circle cx="60" cy="60" r="52" stroke="url(#grad)" stroke-width="8" fill="none"
+            stroke-dasharray="327" stroke-dashoffset="196" stroke-linecap="round"
+            transform="rotate(-90 60 60)"/>
+          <defs><linearGradient id="grad"><stop offset="0%" stop-color="#a78bfa"/><stop offset="100%" stop-color="#60a5fa"/></linearGradient></defs>
+        </svg>
+        <div class="ring-text">
+          <div class="step-num">3</div>
+          <div class="step-of">of 6</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-circle done">✓</div>
+      <div class="step-info">
+        <h4>Calm preparation</h4>
+        <p>Get ready without excitement cues</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-circle done">✓</div>
+      <div class="step-info">
+        <h4>Brief departure (30s)</h4>
+        <p>Leave and return calmly</p>
+      </div>
+    </div>
+
+    <div class="step-card" style="border-color:#3b2d6e;">
+      <div class="step-num-circle current">3</div>
+      <div class="step-info">
+        <h4>Extended departure (2 min)</h4>
+        <p>Leave the room for 2 minutes. Stay calm when returning.</p>
+        <div class="step-timer">
+          <span class="timer-badge">⏱ 2:00</span>
+          <span style="font-size:12px; color:#a78bfa; font-weight:600;">Tap to start timer</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card" style="opacity:0.4;">
+      <div class="step-num-circle">4</div>
+      <div class="step-info">
+        <h4>Extended departure (3 min)</h4>
+        <p>Leave for 3 minutes with calm return</p>
+      </div>
+    </div>
+
+    <div class="clicker-bar">
+      <div>
+        <div class="clicker-label">Clicker</div>
+        <div class="clicker-count">12 clicks</div>
+      </div>
+      <button class="clicker-btn">👆</button>
+      <div>
+        <div class="clicker-label">Treats</div>
+        <div class="clicker-count">8 given</div>
+      </div>
+    </div>
+
+    <div class="annotation">
+      <strong>NEW:</strong> Progress ring instead of flat bar. Built-in clicker (like Dogo). Step timer for timed exercises. Treat counter for training insights.
+    </div>
+  </div>
+
+  <!-- ========== TRICKS ========== -->
+  <div class="screen" id="screen-tricks">
+    <div class="status-bar"><span class="time">9:41</span><div class="status-icons">📶 🔋</div></div>
+    <div style="padding:8px 20px 4px;"><h2 style="font-size:22px; font-weight:800;">Trick Library</h2></div>
+    <div style="padding:4px 20px 12px;"><p style="font-size:13px; color:#71717a;">5 of 30 tricks completed</p></div>
+
+    <div class="filter-row">
+      <div class="filter-chip active">All</div>
+      <div class="filter-chip">Beginner</div>
+      <div class="filter-chip">Intermediate</div>
+      <div class="filter-chip">Advanced</div>
+      <div class="filter-chip">Fun</div>
+    </div>
+
+    <div class="trick-card completed">
+      <div class="trick-icon">🐾</div>
+      <div class="trick-info">
+        <h4>Sit</h4>
+        <p>Basic obedience • 3 steps</p>
+      </div>
+      <div class="trick-check">✅</div>
+    </div>
+
+    <div class="trick-card completed">
+      <div class="trick-icon">🤚</div>
+      <div class="trick-info">
+        <h4>Shake / Paw</h4>
+        <p>Basic obedience • 4 steps</p>
+      </div>
+      <div class="trick-check">✅</div>
+    </div>
+
+    <div class="trick-card completed">
+      <div class="trick-icon">⬇️</div>
+      <div class="trick-info">
+        <h4>Lie Down</h4>
+        <p>Basic obedience • 3 steps</p>
+      </div>
+      <div class="trick-check">✅</div>
+    </div>
+
+    <div class="trick-card">
+      <div class="trick-icon">🔄</div>
+      <div class="trick-info">
+        <h4>Spin</h4>
+        <p>Fun trick • 5 steps</p>
+      </div>
+      <div class="trick-xp">+80 XP</div>
+    </div>
+
+    <div class="trick-card">
+      <div class="trick-icon">🙈</div>
+      <div class="trick-info">
+        <h4>Peekaboo</h4>
+        <p>Fun trick • 6 steps</p>
+      </div>
+      <div class="trick-xp">+100 XP</div>
+    </div>
+
+    <div class="trick-card" style="opacity:0.4;">
+      <div class="trick-icon">🔒</div>
+      <div class="trick-info">
+        <h4>Play Dead</h4>
+        <p>Level 4 required</p>
+      </div>
+      <div class="trick-xp" style="color:#52525b;">+120 XP</div>
+    </div>
+
+    <div class="trick-card" style="opacity:0.4;">
+      <div class="trick-icon">🔒</div>
+      <div class="trick-info">
+        <h4>Crawl</h4>
+        <p>Level 5 required</p>
+      </div>
+      <div class="trick-xp" style="color:#52525b;">+150 XP</div>
+    </div>
+
+    <div class="annotation">
+      <strong>UPDATED:</strong> 30+ tricks (up from 12). Difficulty categories. Locked tricks by level — creates motivation to level up. Completed tricks show green.
+    </div>
+
+    <div style="height:12px;"></div>
+    <div class="bottom-nav">
+      <div class="nav-item"><div class="nav-icon">🏠</div>Home</div>
+      <div class="nav-item active"><div class="nav-icon">🎯</div>Train</div>
+      <div class="nav-item"><div class="nav-icon">🚶</div>Walk</div>
+      <div class="nav-item"><div class="nav-icon">🤖</div>AI</div>
+      <div class="nav-item"><div class="nav-icon">👤</div>Profile</div>
+    </div>
+  </div>
+
+  <!-- ========== WALK ========== -->
+  <div class="screen" id="screen-walk">
+    <div class="status-bar"><span class="time">9:41</span><div class="status-icons">📶 🔋</div></div>
+    <div style="padding:8px 20px 12px;">
+      <h2 style="font-size:22px; font-weight:800;">Walk Tracker</h2>
+    </div>
+
+    <div class="walk-map">
+      <div class="walk-map-grid"></div>
+      <div class="walk-map-path">
+        <div class="walk-map-dot"></div>
+      </div>
+    </div>
+
+    <div class="walk-stats">
+      <div class="walk-stat">
+        <div class="walk-stat-val" style="color:#a78bfa;">0.0</div>
+        <div class="walk-stat-unit">km</div>
+      </div>
+      <div class="walk-stat">
+        <div class="walk-stat-val" style="color:#34d399;">00:00</div>
+        <div class="walk-stat-unit">duration</div>
+      </div>
+      <div class="walk-stat">
+        <div class="walk-stat-val" style="color:#fbbf24;">0</div>
+        <div class="walk-stat-unit">XP earned</div>
+      </div>
+    </div>
+
+    <div class="walk-controls">
+      <button class="walk-start-btn">▶</button>
+    </div>
+
+    <div style="padding:0 20px;">
+      <div class="section-title">This Week's Walks</div>
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-size:14px; font-weight:600;">Morning Walk</div>
+            <div style="font-size:12px; color:#71717a;">Today, 8:30 AM • 2.1 km</div>
+          </div>
+          <div style="color:#a78bfa; font-weight:700;">+30 XP</div>
+        </div>
+      </div>
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-size:14px; font-weight:600;">Evening Walk</div>
+            <div style="font-size:12px; color:#71717a;">Yesterday, 6:15 PM • 1.8 km</div>
+          </div>
+          <div style="color:#a78bfa; font-weight:700;">+25 XP</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="annotation">
+      <strong>NEW FEATURE:</strong> GPS walk tracking (like Dogo). Earns XP per walk. Walk history. Distance, duration, route tracking. Integrates with the overall XP/level system.
+    </div>
+
+    <div style="height:12px;"></div>
+    <div class="bottom-nav">
+      <div class="nav-item"><div class="nav-icon">🏠</div>Home</div>
+      <div class="nav-item"><div class="nav-icon">🎯</div>Train</div>
+      <div class="nav-item active"><div class="nav-icon">🚶</div>Walk</div>
+      <div class="nav-item"><div class="nav-icon">🤖</div>AI</div>
+      <div class="nav-item"><div class="nav-icon">👤</div>Profile</div>
+    </div>
+  </div>
+
+  <!-- ========== HEALTH ========== -->
+  <div class="screen" id="screen-health">
+    <div class="status-bar"><span class="time">9:41</span><div class="status-icons">📶 🔋</div></div>
+    <div style="padding:8px 20px 12px;">
+      <h2 style="font-size:22px; font-weight:800;">Health Tracker</h2>
+    </div>
+
+    <div class="health-tabs">
+      <div class="health-tab active">Upcoming</div>
+      <div class="health-tab">Vaccines</div>
+      <div class="health-tab">Weight</div>
+      <div class="health-tab">Meds</div>
+    </div>
+
+    <div style="padding:0 20px; margin-bottom:16px;">
+      <div class="card" style="background:linear-gradient(135deg,#1e1545,#1a1a20); border-color:#3b2d6e;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <span style="font-size:14px; font-weight:700;">Roi's Weight</span>
+          <span class="badge badge-green">Healthy</span>
+        </div>
+        <div style="display:flex; align-items:baseline; gap:4px; margin-bottom:4px;">
+          <span style="font-size:32px; font-weight:800;">5.2</span>
+          <span style="font-size:14px; color:#71717a;">kg</span>
+        </div>
+        <div style="height:40px; display:flex; align-items:end; gap:3px; margin-top:8px;">
+          <div style="flex:1; background:#27272a; border-radius:3px 3px 0 0; height:60%;"></div>
+          <div style="flex:1; background:#27272a; border-radius:3px 3px 0 0; height:65%;"></div>
+          <div style="flex:1; background:#27272a; border-radius:3px 3px 0 0; height:70%;"></div>
+          <div style="flex:1; background:#27272a; border-radius:3px 3px 0 0; height:75%;"></div>
+          <div style="flex:1; background:#27272a; border-radius:3px 3px 0 0; height:72%;"></div>
+          <div style="flex:1; background:linear-gradient(180deg,#a78bfa,#7c3aed); border-radius:3px 3px 0 0; height:78%;"></div>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:10px; color:#52525b; margin-top:4px;">
+          <span>Nov</span><span>Dec</span><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:0 20px 8px;"><div class="section-title">Upcoming</div></div>
+
+    <div class="health-event">
+      <div class="health-event-icon" style="background:rgba(248,113,113,0.15);">💉</div>
+      <div class="health-event-info">
+        <h4>Rabies Booster</h4>
+        <p>Annual vaccination</p>
+      </div>
+      <div class="health-event-date">Apr 15</div>
+    </div>
+
+    <div class="health-event">
+      <div class="health-event-icon" style="background:rgba(96,165,250,0.15);">💊</div>
+      <div class="health-event-info">
+        <h4>Flea Treatment</h4>
+        <p>Monthly — NexGard</p>
+      </div>
+      <div class="health-event-date">Apr 10</div>
+    </div>
+
+    <div class="health-event">
+      <div class="health-event-icon" style="background:rgba(251,191,36,0.15);">✂️</div>
+      <div class="health-event-info">
+        <h4>Grooming</h4>
+        <p>Full groom at Pets at Home</p>
+      </div>
+      <div class="health-event-date">Apr 20</div>
+    </div>
+
+    <div class="health-event">
+      <div class="health-event-icon" style="background:rgba(52,211,153,0.15);">⚖️</div>
+      <div class="health-event-info">
+        <h4>Weight Check</h4>
+        <p>Monthly weigh-in</p>
+      </div>
+      <div class="health-event-date">Apr 30</div>
+    </div>
+
+    <div style="padding:16px 20px;">
+      <button class="btn btn-secondary" style="display:flex; align-items:center; justify-content:center; gap:8px;">
+        <span>+</span> Add Health Event
+      </button>
+    </div>
+
+    <div class="annotation">
+      <strong>NEW FEATURE:</strong> Full health tracking (like Dogo). Vaccination reminders, medication schedules, weight chart, grooming appointments. Push notification reminders for upcoming events.
+    </div>
+
+    <div style="height:12px;"></div>
+    <div class="bottom-nav">
+      <div class="nav-item"><div class="nav-icon">🏠</div>Home</div>
+      <div class="nav-item"><div class="nav-icon">🎯</div>Train</div>
+      <div class="nav-item"><div class="nav-icon">🚶</div>Walk</div>
+      <div class="nav-item"><div class="nav-icon">🤖</div>AI</div>
+      <div class="nav-item active"><div class="nav-icon">👤</div>Profile</div>
+    </div>
+  </div>
+
+  <!-- ========== BADGES ========== -->
+  <div class="screen" id="screen-badges">
+    <div class="status-bar"><span class="time">9:41</span><div class="status-icons">📶 🔋</div></div>
+    <div style="padding:8px 20px 4px;"><h2 style="font-size:22px; font-weight:800;">Achievements</h2></div>
+    <div style="padding:4px 20px 16px;"><p style="font-size:13px; color:#71717a;">6 of 18 badges earned</p></div>
+
+    <div style="padding:0 20px; margin-bottom:16px;">
+      <div class="progress-bar" style="height:8px;">
+        <div class="progress-fill" style="width:33%; background:linear-gradient(90deg,#a78bfa,#60a5fa);"></div>
+      </div>
+    </div>
+
+    <div style="padding:0 20px 8px;"><div class="section-title">🏆 Earned</div></div>
+    <div class="badges-grid">
+      <div class="badge-card earned">
+        <div class="badge-emoji">🎯</div>
+        <div class="badge-name">First Session</div>
+        <div class="badge-desc">Complete 1 session</div>
+      </div>
+      <div class="badge-card earned">
+        <div class="badge-emoji">🔥</div>
+        <div class="badge-name">On Fire</div>
+        <div class="badge-desc">7-day streak</div>
+      </div>
+      <div class="badge-card earned">
+        <div class="badge-emoji">🎓</div>
+        <div class="badge-name">Trick Master</div>
+        <div class="badge-desc">Complete 5 tricks</div>
+      </div>
+      <div class="badge-card earned">
+        <div class="badge-emoji">⭐</div>
+        <div class="badge-name">XP Hunter</div>
+        <div class="badge-desc">Earn 500 XP</div>
+      </div>
+      <div class="badge-card earned">
+        <div class="badge-emoji">📈</div>
+        <div class="badge-name">Level Up</div>
+        <div class="badge-desc">Reach Level 3</div>
+      </div>
+      <div class="badge-card earned">
+        <div class="badge-emoji">🚶</div>
+        <div class="badge-name">Walker</div>
+        <div class="badge-desc">10 walks logged</div>
+      </div>
+    </div>
+
+    <div style="padding:0 20px 8px;"><div class="section-title">🔒 Locked</div></div>
+    <div class="badges-grid">
+      <div class="badge-card locked">
+        <div class="badge-emoji">💪</div>
+        <div class="badge-name">14-Day Streak</div>
+        <div class="badge-desc">2/14 days</div>
+      </div>
+      <div class="badge-card locked">
+        <div class="badge-emoji">🏅</div>
+        <div class="badge-name">SA Graduate</div>
+        <div class="badge-desc">Finish 21-day program</div>
+      </div>
+      <div class="badge-card locked">
+        <div class="badge-emoji">🌟</div>
+        <div class="badge-name">Alpha Quester</div>
+        <div class="badge-desc">Reach Level 6</div>
+      </div>
+      <div class="badge-card locked">
+        <div class="badge-emoji">🗓️</div>
+        <div class="badge-name">30-Day Streak</div>
+        <div class="badge-desc">0/30 days</div>
+      </div>
+      <div class="badge-card locked">
+        <div class="badge-emoji">🎪</div>
+        <div class="badge-name">Trick Pro</div>
+        <div class="badge-desc">Complete 15 tricks</div>
+      </div>
+      <div class="badge-card locked">
+        <div class="badge-emoji">🏃</div>
+        <div class="badge-name">Marathon</div>
+        <div class="badge-desc">Walk 50 km total</div>
+      </div>
+    </div>
+
+    <div class="annotation">
+      <strong>NEW FEATURE:</strong> 18 badges (Dogo lacks this). Earned/locked split. Progress indicators on locked badges. Drives long-term engagement — this is our key differentiator.
+    </div>
+
+    <div style="height:80px;"></div>
+  </div>
+
+  <!-- ========== LEADERBOARD ========== -->
+  <div class="screen" id="screen-leaderboard">
+    <div class="status-bar"><span class="time">9:41</span><div class="status-icons">📶 🔋</div></div>
+    <div style="padding:8px 20px 4px;"><h2 style="font-size:22px; font-weight:800;">Leaderboard</h2></div>
+    <div style="padding:4px 20px 16px;"><p style="font-size:13px; color:#71717a;">This week's top trainers</p></div>
+
+    <div class="filter-row">
+      <div class="filter-chip active">Weekly</div>
+      <div class="filter-chip">Monthly</div>
+      <div class="filter-chip">All Time</div>
+      <div class="filter-chip">Friends</div>
+    </div>
+
+    <!-- Top 3 podium -->
+    <div style="display:flex; justify-content:center; align-items:end; gap:12px; padding:0 20px 20px; height:180px;">
+      <div style="text-align:center; width:90px;">
+        <div style="font-size:32px; margin-bottom:4px;">🐕</div>
+        <div style="font-size:13px; font-weight:700;">Luna</div>
+        <div style="font-size:11px; color:#71717a;">Sarah</div>
+        <div style="background:#27272a; border-radius:8px 8px 0 0; height:60px; display:flex; align-items:center; justify-content:center; margin-top:8px;">
+          <span style="font-size:20px; font-weight:800; color:#d1d5db;">2</span>
+        </div>
+        <div style="font-size:12px; color:#a78bfa; font-weight:700; margin-top:4px;">2,450 XP</div>
+      </div>
+      <div style="text-align:center; width:90px;">
+        <div style="font-size:36px; margin-bottom:4px;">👑</div>
+        <div style="font-size:32px;">🐶</div>
+        <div style="font-size:13px; font-weight:700;">Roi</div>
+        <div style="font-size:11px; color:#71717a;">Katie</div>
+        <div style="background:linear-gradient(180deg,#1e1545,#27272a); border:1px solid #3b2d6e; border-radius:8px 8px 0 0; height:80px; display:flex; align-items:center; justify-content:center; margin-top:8px;">
+          <span style="font-size:24px; font-weight:800; color:#fbbf24;">1</span>
+        </div>
+        <div style="font-size:12px; color:#fbbf24; font-weight:700; margin-top:4px;">3,200 XP</div>
+      </div>
+      <div style="text-align:center; width:90px;">
+        <div style="font-size:32px; margin-bottom:4px;">🐩</div>
+        <div style="font-size:13px; font-weight:700;">Max</div>
+        <div style="font-size:11px; color:#71717a;">James</div>
+        <div style="background:#27272a; border-radius:8px 8px 0 0; height:45px; display:flex; align-items:center; justify-content:center; margin-top:8px;">
+          <span style="font-size:20px; font-weight:800; color:#d97706;">3</span>
+        </div>
+        <div style="font-size:12px; color:#a78bfa; font-weight:700; margin-top:4px;">1,890 XP</div>
+      </div>
+    </div>
+
+    <div class="leaderboard-item">
+      <div class="lb-rank">4</div>
+      <div class="lb-avatar" style="background:rgba(96,165,250,0.15);">🐕‍🦺</div>
+      <div class="lb-info"><div class="lb-name">Bella</div><div class="lb-dog">Emma • Level 4</div></div>
+      <div class="lb-xp">1,650 XP</div>
+    </div>
+    <div class="leaderboard-item">
+      <div class="lb-rank">5</div>
+      <div class="lb-avatar" style="background:rgba(52,211,153,0.15);">🦮</div>
+      <div class="lb-info"><div class="lb-name">Charlie</div><div class="lb-dog">Tom • Level 3</div></div>
+      <div class="lb-xp">1,420 XP</div>
+    </div>
+    <div class="leaderboard-item">
+      <div class="lb-rank">6</div>
+      <div class="lb-avatar" style="background:rgba(251,191,36,0.15);">🐾</div>
+      <div class="lb-info"><div class="lb-name">Daisy</div><div class="lb-dog">Mia • Level 3</div></div>
+      <div class="lb-xp">1,180 XP</div>
+    </div>
+
+    <div class="annotation">
+      <strong>NEW FEATURE:</strong> Full leaderboard (Dogo only has walk competition). Weekly/monthly/all-time filters. Podium for top 3. Friends filter for social comparison. Drives competition and retention.
+    </div>
+
+    <div style="height:80px;"></div>
+  </div>
+
+  <!-- ========== AI ADVISOR ========== -->
+  <div class="screen" id="screen-advisor">
+    <div class="status-bar"><span class="time">9:41</span><div class="status-icons">📶 🔋</div></div>
+    <div style="padding:8px 20px 12px; display:flex; align-items:center; gap:10px;">
+      <div style="width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,#a78bfa,#7c3aed); display:flex; align-items:center; justify-content:center; font-size:18px;">🤖</div>
+      <div>
+        <h3 style="font-size:16px; font-weight:700;">PawQuest AI Coach</h3>
+        <p style="font-size:11px; color:#34d399;">Online • Knows Roi's training history</p>
+      </div>
+    </div>
+
+    <div style="padding:0 20px; margin-bottom:12px;">
+      <div style="display:flex; gap:6px; overflow-x:auto;">
+        <div style="padding:6px 12px; background:#1a1a20; border:1px solid #27272a; border-radius:20px; font-size:12px; color:#a1a1aa; white-space:nowrap;">Why is Roi barking?</div>
+        <div style="padding:6px 12px; background:#1a1a20; border:1px solid #27272a; border-radius:20px; font-size:12px; color:#a1a1aa; white-space:nowrap;">Today's tips</div>
+        <div style="padding:6px 12px; background:#1a1a20; border:1px solid #27272a; border-radius:20px; font-size:12px; color:#a1a1aa; white-space:nowrap;">SA progress review</div>
+      </div>
+    </div>
+
+    <div class="chat-messages">
+      <div class="chat-msg ai">
+        <div style="font-size:12px; color:#a78bfa; font-weight:600; margin-bottom:6px;">🤖 PawQuest AI</div>
+        Hi Katie! Roi is doing great on Day 8. His consistency with the 7-day streak is impressive. Ready for today's extended departure practice?
+      </div>
+      <div class="chat-msg user">
+        Roi whined a lot when I left for 2 minutes yesterday. Is that normal?
+      </div>
+      <div class="chat-msg ai">
+        <div style="font-size:12px; color:#a78bfa; font-weight:600; margin-bottom:6px;">🤖 PawQuest AI</div>
+        Completely normal at this stage! Whining typically decreases as Roi builds confidence. Two tips:<br><br>
+        <strong>1.</strong> Keep your departures boring — no long goodbyes<br>
+        <strong>2.</strong> If whining lasts over 1 minute, try dropping back to 90 seconds tomorrow<br><br>
+        Your Day 7 data shows Roi settled within 40 seconds. That's actually progress! 📈
+      </div>
+    </div>
+
+    <div class="annotation" style="margin-bottom:0;">
+      <strong>ENHANCED:</strong> Quick suggestion chips. AI knows dog's full training history from Supabase. Context-aware responses based on current program day and performance data.
+    </div>
+
+    <div class="chat-input-bar">
+      <button class="mic-btn">🎤</button>
+      <input class="chat-input" placeholder="Ask about Roi's training..." />
+      <button class="send-btn">➤</button>
+    </div>
+  </div>
+
+  <!-- ========== PROFILE ========== -->
+  <div class="screen" id="screen-profile">
+    <div class="status-bar"><span class="time">9:41</span><div class="status-icons">📶 🔋</div></div>
+
+    <div class="profile-header">
+      <div class="profile-avatar">🐶</div>
+      <div class="profile-name">Roi</div>
+      <div class="profile-breed">Maltichon • 2 years old</div>
+      <div class="profile-stats">
+        <div class="profile-stat">
+          <div class="profile-stat-val" style="color:#a78bfa;">Lv.3</div>
+          <div class="profile-stat-label">Level</div>
+        </div>
+        <div class="profile-stat">
+          <div class="profile-stat-val" style="color:#fbbf24;">650</div>
+          <div class="profile-stat-label">XP</div>
+        </div>
+        <div class="profile-stat">
+          <div class="profile-stat-val" style="color:#f87171;">7🔥</div>
+          <div class="profile-stat-label">Streak</div>
+        </div>
+        <div class="profile-stat">
+          <div class="profile-stat-val" style="color:#34d399;">6</div>
+          <div class="profile-stat-label">Badges</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="menu-item">
+      <span class="menu-icon">🐾</span>
+      <span class="menu-text">Edit Dog Profile</span>
+      <span class="menu-arrow">›</span>
+    </div>
+    <div class="menu-item">
+      <span class="menu-icon">➕</span>
+      <span class="menu-text">Add Another Dog</span>
+      <span class="menu-arrow">›</span>
+    </div>
+    <div class="menu-item">
+      <span class="menu-icon">👥</span>
+      <span class="menu-text">Family Members</span>
+      <span class="menu-arrow">›</span>
+    </div>
+    <div class="menu-item">
+      <span class="menu-icon">🏆</span>
+      <span class="menu-text">Achievements</span>
+      <span class="menu-arrow">›</span>
+    </div>
+    <div class="menu-item">
+      <span class="menu-icon">📅</span>
+      <span class="menu-text">Training Calendar</span>
+      <span class="menu-arrow">›</span>
+    </div>
+    <div class="menu-item">
+      <span class="menu-icon">🏥</span>
+      <span class="menu-text">Health Records</span>
+      <span class="menu-arrow">›</span>
+    </div>
+    <div class="menu-item">
+      <span class="menu-icon">🔔</span>
+      <span class="menu-text">Notifications</span>
+      <span class="menu-arrow">›</span>
+    </div>
+    <div class="menu-item">
+      <span class="menu-icon">💎</span>
+      <span class="menu-text">Upgrade to Pro — £4.99/mo</span>
+      <span class="menu-arrow">›</span>
+    </div>
+    <div class="menu-item" style="border-bottom:none;">
+      <span class="menu-icon">🚪</span>
+      <span class="menu-text" style="color:#f87171;">Sign Out</span>
+      <span class="menu-arrow">›</span>
+    </div>
+
+    <div class="annotation">
+      <strong>UPDATED:</strong> Multi-dog support (like Dogo, up to 5). Family members sharing. Health records access. Pro upgrade upsell. All stats visible at a glance.
+    </div>
+
+    <div style="height:12px;"></div>
+    <div class="bottom-nav">
+      <div class="nav-item"><div class="nav-icon">🏠</div>Home</div>
+      <div class="nav-item"><div class="nav-icon">🎯</div>Train</div>
+      <div class="nav-item"><div class="nav-icon">🚶</div>Walk</div>
+      <div class="nav-item"><div class="nav-icon">🤖</div>AI</div>
+      <div class="nav-item active"><div class="nav-icon">👤</div>Profile</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.querySelectorAll('.screen-nav button').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+</script>
+
+</body>
+</html>

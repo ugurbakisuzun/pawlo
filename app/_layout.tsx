@@ -17,8 +17,6 @@ export default function RootLayout() {
     supabase.auth.onAuthStateChange((_event, session) => {
       setUserId(session?.user?.id ?? null);
     });
-
-    // Günlük saat 19:00 hatırlatıcısını kur
     scheduleDailyReminder(19, 0);
   }, []);
 
@@ -40,6 +38,12 @@ export default function RootLayout() {
       <Stack.Screen name="levelup" />
       <Stack.Screen name="advisor" />
       <Stack.Screen name="tricks" />
+      <Stack.Screen name="calendar" />
+      <Stack.Screen name="badges" />
+      <Stack.Screen name="leaderboard" />
+      <Stack.Screen name="walk" />
+      <Stack.Screen name="walkdetail" />
+      <Stack.Screen name="health" />
     </Stack>
   );
 }

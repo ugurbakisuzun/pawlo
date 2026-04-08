@@ -64,14 +64,16 @@ export default function SessionScreen() {
   const params = useLocalSearchParams();
   const dayNumber = Number(params.day) || 1;
   const programSlug = (params.slug as string) || "separation-anxiety";
+  const programTitle = params.programTitle ? decodeURIComponent(params.programTitle as string) : "Training";
   const trickName = params.trickName as string | undefined;
   const trickDesc = params.trickDesc as string | undefined;
   const trickXp = Number(params.trickXp) || 80;
+  const trickId = params.trickId as string | undefined;
   const trickSteps: string[] | undefined = params.trickSteps
     ? JSON.parse(params.trickSteps as string)
     : undefined;
 
-  const { dog, setDog, addCompletedMission } = useStore();
+  const { dog, setDog, syncCompletedTrick, checkAndAwardBadges, loadBadges, completeDailyMission, dailyMissions, completedDailyIds } = useStore();
   const [dayData, setDayData] = useState<ProgramDay | null>(null);
   const [loading, setLoading] = useState(true);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
@@ -178,7 +180,7 @@ export default function SessionScreen() {
       setTextInput("");
       ExpoSpeechRecognitionModule.start({
         lang: "en-US",
-        continuous: false,
+        continuous: true,
         interimResults: false,
       });
     } catch {
@@ -208,7 +210,7 @@ export default function SessionScreen() {
           max_tokens: 150,
           system: `You are PawAI, a dog behaviour coach inside PawQuest.
 Dog: ${dog?.name ?? "the dog"}, ${dog?.breed ?? "unknown breed"}, Level ${dog?.level ?? 1}.
-Program: Separation Anxiety · Day ${dayData.day} — ${dayData.title}.
+Program: ${programTitle} · Day ${dayData.day} — ${dayData.title}.
 Step ${step.number}: ${step.instruction}
 Question: ${step.voice_prompt}
 Analyse in 2 short sentences: what the behaviour indicates, and one actionable tip. Be warm and jargon-free.`,
@@ -266,7 +268,6 @@ Analyse in 2 short sentences: what the behaviour indicates, and one actionable t
       const leveledUp = newLevel > dog.level;
       const now = new Date();
 
-      // ── Streak hesapla ─────────────────────────────────────────────
       const lastTrained = dog.last_trained_at
         ? new Date(dog.last_trained_at)
         : null;
@@ -275,20 +276,10 @@ Analyse in 2 short sentences: what the behaviour indicates, and one actionable t
         : 999;
 
       let newStreak: number;
-      if (!lastTrained) {
-        // İlk seans
-        newStreak = 1;
-      } else if (diffHours < 24) {
-        // Aynı gün — streak en az 1 olmalı
-        newStreak = Math.max(dog.streak_days, 1);
-      } else if (diffHours < 48) {
-        // Ertesi gün — streak artıyor
-        newStreak = dog.streak_days + 1;
-      } else {
-        // 48 saatten fazla — sıfırla
-        newStreak = 1;
-      }
-      // ───────────────────────────────────────────────────────────────
+      if (!lastTrained) newStreak = 1;
+      else if (diffHours < 24) newStreak = Math.max(dog.streak_days, 1);
+      else if (diffHours < 48) newStreak = dog.streak_days + 1;
+      else newStreak = 1;
 
       const { data, error } = await supabase
         .from("dogs")
@@ -306,26 +297,56 @@ Analyse in 2 short sentences: what the behaviour indicates, and one actionable t
       await supabase.from("xp_events").insert({
         dog_id: dog.id,
         amount: xpEarned,
-        reason: isTrickMode ? `${trickName} trick` : `SA Day ${dayNumber}`,
+        reason: isTrickMode ? `${trickName} trick` : `${programTitle} Day ${dayNumber}`,
       });
 
       if (!isTrickMode) {
         await supabase.from("training_sessions").insert({
           dog_id: dog.id,
           day_number: dayNumber,
+          program_slug: programSlug,
         });
       }
 
       setDog(data);
-      addCompletedMission(
-        isTrickMode ? ((params.trickId as string) ?? "1") : "1",
-      );
+
+      if (isTrickMode && trickId) {
+        await syncCompletedTrick(dog.id, trickId);
+      }
+
+      // Auto-complete daily missions
+      for (const m of dailyMissions) {
+        if (completedDailyIds.includes(m.id)) continue;
+        if (m.type === "sa_session" && !isTrickMode) {
+          await completeDailyMission(dog.id, m.id);
+        }
+        if (m.type === "trick" && isTrickMode) {
+          await completeDailyMission(dog.id, m.id);
+        }
+      }
+
+      // Check and award badges
+      await loadBadges(dog.id);
+      const newBadges = await checkAndAwardBadges(dog.id);
+
       await sendSessionCompleteNotification(dog.name, xpEarned, newStreak);
-      router.push(
-        leveledUp
-          ? `/levelup?level=${newLevel}&xp=${newXP}&name=${dog.name}`
-          : ("/dashboard" as any),
-      );
+
+      if (newBadges.length > 0) {
+        // Navigate with badge info — replace so session is removed from stack
+        const badgeNames = newBadges.map((b) => `${b.emoji} ${b.name}`).join(", ");
+        const badgeXP = newBadges.reduce((s, b) => s + b.xp_reward, 0);
+        router.replace(
+          leveledUp
+            ? (`/levelup?level=${newLevel}&xp=${newXP}&name=${dog.name}&badges=${encodeURIComponent(badgeNames)}&badgeXP=${badgeXP}` as any)
+            : (`/dashboard?newBadges=${encodeURIComponent(badgeNames)}&badgeXP=${badgeXP}` as any),
+        );
+      } else {
+        router.replace(
+          leveledUp
+            ? (`/levelup?level=${newLevel}&xp=${newXP}&name=${dog.name}` as any)
+            : ("/dashboard" as any),
+        );
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -355,7 +376,6 @@ Analyse in 2 short sentences: what the behaviour indicates, and one actionable t
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
       <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false}>
-        {/* ── Top bar ── */}
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => router.back()}>
             <Text style={styles.backText}>← Back</Text>
@@ -373,7 +393,6 @@ Analyse in 2 short sentences: what the behaviour indicates, and one actionable t
           </Text>
         </View>
 
-        {/* ── Hero ── */}
         <View style={styles.hero}>
           <Text style={styles.heroEmoji}>{isTrickMode ? "🐕" : "🐾"}</Text>
           <Text style={styles.heroTitle}>{dayData.title}</Text>
@@ -385,14 +404,12 @@ Analyse in 2 short sentences: what the behaviour indicates, and one actionable t
           <Text style={styles.heroGoal}>{dayData.goal}</Text>
         </View>
 
-        {/* ── XP badge ── */}
         <View style={styles.xpBadge}>
           <Text style={styles.xpBadgeText}>
             ⭐ Complete to earn +{xpEarned} XP
           </Text>
         </View>
 
-        {/* ── Steps ── */}
         <Text style={styles.stepsTitle}>Step by step</Text>
         {dayData.steps.map((step, index) => {
           const done = completedSteps.includes(index);
@@ -432,7 +449,6 @@ Analyse in 2 short sentences: what the behaviour indicates, and one actionable t
                 </View>
               </TouchableOpacity>
 
-              {/* ── Voice / text prompt card ── */}
               {isActive && step.voice_prompt && (
                 <View style={styles.voiceCard}>
                   <Text style={styles.voiceQuestion}>{step.voice_prompt}</Text>
@@ -511,7 +527,6 @@ Analyse in 2 short sentences: what the behaviour indicates, and one actionable t
                 </View>
               )}
 
-              {/* ── AI feedback ── */}
               {analysis && (
                 <View style={styles.feedbackCard}>
                   <View style={styles.feedbackHeader}>
@@ -528,7 +543,6 @@ Analyse in 2 short sentences: what the behaviour indicates, and one actionable t
           );
         })}
 
-        {/* ── Actions ── */}
         <View style={styles.actions}>
           <TouchableOpacity
             style={[

@@ -13,13 +13,14 @@
       "bundleIdentifier": "com.ugurbakisuzun.pawquest",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "PawQuest uses your microphone so you can describe your dog's behaviour hands-free during training sessions.",
-        "NSSpeechRecognitionUsageDescription": "PawQuest converts your voice to text so the AI coach can analyse your training session in real time."
+        "NSSpeechRecognitionUsageDescription": "PawQuest converts your voice to text so the AI coach can analyse your training session in real time.",
+        "NSLocationWhenInUseUsageDescription": "PawQuest tracks your location during dog walks to measure distance and award XP."
       }
     },
     "android": {
       "package": "com.ugurbakisuzun.pawquest",
       "versionCode": 1,
-      "permissions": ["RECORD_AUDIO"],
+      "permissions": ["RECORD_AUDIO", "ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"],
       "adaptiveIcon": {
         "backgroundColor": "#0F0B2E",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -47,7 +48,13 @@
           }
         }
       ],
-      "expo-speech-recognition"
+      "expo-speech-recognition",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "PawQuest tracks your location during dog walks to measure distance and award XP."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

@@ -124,7 +124,7 @@ export default function LevelUpScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.btnGhost}
-            onPress={() => router.replace("/dashboard" as any)}
+            onPress={() => router.push("/leaderboard" as any)}
           >
             <Text style={styles.btnGhostText}>View leaderboard →</Text>
           </TouchableOpacity>
