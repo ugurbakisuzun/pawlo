@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Pawlo",
-    "slug": "pawlo",
+    "slug": "pawquest",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
