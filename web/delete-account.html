@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Delete your Pawlo account</title>
+  <meta name="description" content="How to permanently delete your Pawlo account and all associated data. Two ways: in-app or by emailing us." />
+
+  <meta property="og:title" content="Delete your Pawlo account" />
+  <meta property="og:description" content="How to permanently delete your Pawlo account and all associated data." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://pawlo.so/delete-account" />
+  <meta name="theme-color" content="#0F0B2E" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --night: #0F0B2E;
+      --night-2: #1A1742;
+      --gold: #FAC775;
+      --purple: #7F77DD;
+      --green: #1D9E75;
+      --coral: #E76F51;
+      --text: #FFFFFF;
+      --text-2: rgba(255, 255, 255, 0.78);
+      --text-3: rgba(255, 255, 255, 0.55);
+      --border: rgba(255, 255, 255, 0.1);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--night);
+      color: var(--text);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--gold); text-decoration: none; border-bottom: 1px solid rgba(250,199,117,0.3); }
+    a:hover { border-bottom-color: var(--gold); }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background:
+        radial-gradient(circle at 20% 10%, rgba(127,119,221,0.14), transparent 50%),
+        radial-gradient(circle at 80% 60%, rgba(250,199,117,0.08), transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      background: rgba(15, 11, 46, 0.7);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 0;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding-left: 24px;
+      padding-right: 24px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 22px;
+      color: var(--text);
+      border-bottom: none;
+    }
+    .logo-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: var(--gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+
+    .nav-back {
+      color: var(--text-3);
+      font-size: 14px;
+      font-weight: 500;
+      border-bottom: none;
+    }
+    .nav-back:hover { color: var(--text); }
+
+    .doc { padding: 80px 0 120px; }
+
+    .doc-eyebrow {
+      display: inline-block;
+      background: rgba(231,111,81,0.14);
+      border: 1px solid rgba(231,111,81,0.3);
+      color: var(--coral);
+      padding: 7px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      margin-bottom: 22px;
+    }
+
+    h1 {
+      font-size: clamp(38px, 5vw, 54px);
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      margin-bottom: 18px;
+    }
+
+    .doc-intro {
+      font-size: 18px;
+      color: var(--text-2);
+      max-width: 640px;
+      margin-bottom: 16px;
+    }
+
+    .doc-meta {
+      font-size: 13px;
+      color: var(--text-3);
+      margin-bottom: 56px;
+    }
+
+    h2 {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      margin-top: 56px;
+      margin-bottom: 14px;
+      color: var(--text);
+    }
+
+    h3 {
+      font-size: 17px;
+      font-weight: 700;
+      margin-top: 28px;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    p, li {
+      font-size: 16px;
+      color: var(--text-2);
+      margin-bottom: 14px;
+    }
+
+    .steps {
+      counter-reset: step;
+      list-style: none;
+      padding-left: 0;
+      margin: 22px 0;
+    }
+    .steps li {
+      counter-increment: step;
+      position: relative;
+      padding: 16px 18px 16px 60px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      margin-bottom: 12px;
+      font-size: 15px;
+      color: var(--text-2);
+    }
+    .steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 32px;
+      height: 32px;
+      background: var(--gold);
+      color: var(--night);
+      font-weight: 800;
+      font-size: 14px;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .steps li strong { color: var(--text); }
+
+    .data-table {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 4px 0;
+      margin: 18px 0;
+      overflow: hidden;
+    }
+    .data-row {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 18px;
+      padding: 16px 22px;
+      border-bottom: 1px solid var(--border);
+      font-size: 15px;
+    }
+    .data-row:last-child { border-bottom: none; }
+    .data-key {
+      color: var(--gold);
+      font-weight: 600;
+    }
+    .data-val { color: var(--text-2); }
+
+    @media (max-width: 600px) {
+      .data-row {
+        grid-template-columns: 1fr;
+        gap: 4px;
+      }
+    }
+
+    .callout {
+      background: rgba(231,111,81,0.08);
+      border: 1px solid rgba(231,111,81,0.3);
+      border-radius: 14px;
+      padding: 18px 22px;
+      margin: 24px 0;
+      font-size: 15px;
+      color: var(--text-2);
+    }
+    .callout strong { color: var(--text); }
+
+    .email-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--gold);
+      color: var(--night);
+      padding: 14px 24px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 15px;
+      border-bottom: none;
+      margin-top: 8px;
+      transition: transform .15s ease, box-shadow .2s ease;
+    }
+    .email-cta:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 30px rgba(250,199,117,0.35);
+      border-bottom: none;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 0;
+      text-align: center;
+      color: var(--text-3);
+      font-size: 13px;
+    }
+    footer a { color: var(--text-3); border-bottom: none; }
+    footer a:hover { color: var(--gold); }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="nav-inner">
+      <a href="/" class="logo">
+        <span class="logo-mark">🐾</span>
+        Pawlo
+      </a>
+      <a href="/" class="nav-back">← Back to home</a>
+    </div>
+  </nav>
+
+  <main class="doc">
+    <div class="container">
+
+      <span class="doc-eyebrow">Account &amp; Data</span>
+      <h1>Delete your Pawlo account</h1>
+      <p class="doc-intro">
+        Pawlo (developed by Ugur Bakisuzun, an independent UK developer)
+        gives you two ways to permanently delete your account and all of the
+        data associated with it. Both routes wipe everything immediately —
+        there is no soft delete and no waiting period.
+      </p>
+      <p class="doc-meta">Last updated: 10 April 2026</p>
+
+      <h2>Option 1 — Delete from inside the app (recommended)</h2>
+      <p>
+        This is the fastest way and takes about 10 seconds.
+      </p>
+      <ol class="steps">
+        <li>Open the <strong>Pawlo</strong> app on your phone and make sure you are signed in.</li>
+        <li>Tap the <strong>Profile</strong> icon in the bottom navigation.</li>
+        <li>Scroll to the bottom of the Profile screen.</li>
+        <li>Tap <strong>Delete account</strong>.</li>
+        <li>Confirm in the alert that pops up. Your account and all your dog's data will be wiped immediately.</li>
+      </ol>
+
+      <h2>Option 2 — Email us</h2>
+      <p>
+        If you can't access the app — for example, you've already uninstalled
+        it or you've forgotten your password — send us an email and we'll
+        process the deletion manually within 7 days.
+      </p>
+      <p>
+        Send your request to:
+      </p>
+      <a href="mailto:hello@pawlo.so?subject=Delete%20my%20Pawlo%20account&amp;body=Please%20delete%20my%20Pawlo%20account.%0A%0AThe%20email%20address%20I%20signed%20up%20with%20is%3A%20%5Byour%20email%5D" class="email-cta">
+        ✉️ hello@pawlo.so
+      </a>
+      <p style="margin-top: 22px; font-size: 14px; color: var(--text-3);">
+        Please include the email address you signed up with, so we can find
+        the right account. We may ask one verification question to make sure
+        we are deleting the right account before we proceed.
+      </p>
+
+      <h2>What gets deleted</h2>
+      <p>
+        Whichever route you use, the following are deleted permanently and
+        cannot be recovered:
+      </p>
+      <div class="data-table">
+        <div class="data-row">
+          <div class="data-key">Account</div>
+          <div class="data-val">Your email address, hashed password, and Supabase auth user record.</div>
+        </div>
+        <div class="data-row">
+          <div class="data-key">Dog profile</div>
+          <div class="data-val">Your dog's name, breed, age, sex, and any optional fields you filled in.</div>
+        </div>
+        <div class="data-row">
+          <div class="data-key">Training data</div>
+          <div class="data-val">Completed sessions, XP, streaks, badges, missions, programs, and tricks practised.</div>
+        </div>
+        <div class="data-row">
+          <div class="data-key">AI advisor chats</div>
+          <div class="data-val">Every message you have ever sent to Pawlo (the AI character) and every reply it gave.</div>
+        </div>
+        <div class="data-row">
+          <div class="data-key">Walks</div>
+          <div class="data-val">All recorded walks, GPS routes, distances, and durations.</div>
+        </div>
+        <div class="data-row">
+          <div class="data-key">Health log</div>
+          <div class="data-val">Weight logs, vaccination records, and medication entries.</div>
+        </div>
+        <div class="data-row">
+          <div class="data-key">Push notification token</div>
+          <div class="data-val">The device token used to send you the daily training reminder.</div>
+        </div>
+      </div>
+
+      <h2>What is kept (and why)</h2>
+      <p>
+        After deletion, the only thing we may retain is anonymous,
+        aggregated metrics — for example, "how many sessions were completed
+        across all users this month". These cannot be traced back to you,
+        your dog, or your account, and they are used solely to understand
+        how the service is being used in aggregate.
+      </p>
+      <p>
+        If you ever subscribed to <strong>Pawlo Pro</strong>, the underlying
+        purchase record is held by Google Play (Android) or Apple (iOS) and
+        by RevenueCat (our payment partner). We do not control those
+        records, but they contain only an anonymous app user ID and the
+        subscription state — never your name or email. To request deletion
+        from RevenueCat, see their
+        <a href="https://www.revenuecat.com/privacy/">privacy policy</a>.
+        To manage your Google Play / Apple subscription history, use those
+        platforms' own account settings.
+      </p>
+
+      <h2>Retention period</h2>
+      <p>
+        <strong>Zero days.</strong> Once you tap "Delete account" in the app
+        (or once we process your email request), the deletion is immediate
+        and irreversible. We do not hold your data in a recovery window.
+      </p>
+
+      <div class="callout">
+        <strong>Made a mistake?</strong> Once your account is gone, it's
+        gone — there is no undo and we cannot restore it. If you'd like to
+        come back to Pawlo, you can always create a fresh account with the
+        same email address.
+      </div>
+
+      <h2>Questions?</h2>
+      <p>
+        Email <a href="mailto:hello@pawlo.so">hello@pawlo.so</a> or read our
+        full <a href="/privacy">Privacy Policy</a>.
+      </p>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      © 2026 Pawlo · <a href="/">Home</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="mailto:hello@pawlo.so">Contact</a>
+    </div>
+  </footer>
+
+</body>
+</html>
