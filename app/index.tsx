@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { Redirect, router } from "expo-router";
 import {
     Linking,
     StatusBar,
@@ -8,6 +8,7 @@ import {
     View,
 } from "react-native";
 import { Colors, Palette, Radius, Spacing } from "../constants/theme";
+import { useStore } from "../lib/store";
 
 const TERMS_URL = "https://pawlo.so/terms";
 const PRIVACY_URL = "https://pawlo.so/privacy";
@@ -15,6 +16,16 @@ const PRIVACY_URL = "https://pawlo.so/privacy";
 const C = Colors.dark;
 
 export default function OnboardingScreen() {
+  const userId = useStore((s) => s.userId);
+  const dog = useStore((s) => s.dog);
+
+  // User already logged in — skip to the right screen.
+  // _layout.tsx pre-loads both userId and dog before marking ready,
+  // so by the time this component mounts the store is populated and
+  // the redirect fires on the very first render — no flash.
+  if (userId && dog) return <Redirect href="/dashboard" />;
+  if (userId && !dog) return <Redirect href="/setup" />;
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />

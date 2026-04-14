@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
+    Alert,
     KeyboardAvoidingView,
     Platform,
     StatusBar,
@@ -20,9 +21,11 @@ export default function SignupScreen() {
   const params = useLocalSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isLogin, setIsLogin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [resetSent, setResetSent] = useState(false);
 
   // mode=login olarak gelirse direkt login ekranı aç
   useEffect(() => {
@@ -34,6 +37,23 @@ export default function SignupScreen() {
       setError("Please fill in all fields");
       return;
     }
+
+    // Signup mode: confirm password must match
+    if (!isLogin) {
+      if (!confirmPassword) {
+        setError("Please confirm your password");
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError("Passwords don't match");
+        return;
+      }
+      if (password.length < 6) {
+        setError("Password must be at least 6 characters");
+        return;
+      }
+    }
+
     setLoading(true);
     setError("");
 
@@ -50,6 +70,33 @@ export default function SignupScreen() {
       else router.replace("/setup");
     }
     setLoading(false);
+  };
+
+  const handleForgotPassword = async () => {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setError("Enter your email above, then tap Forgot password");
+      return;
+    }
+    setLoading(true);
+    setError("");
+
+    const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
+      redirectTo: "https://pawlo.so/reset-password",
+    });
+
+    setLoading(false);
+
+    if (error) {
+      setError(error.message);
+    } else {
+      setResetSent(true);
+      Alert.alert(
+        "Check your email",
+        `We've sent a password reset link to ${trimmedEmail}. It may take a minute to arrive.`,
+        [{ text: "OK" }],
+      );
+    }
   };
 
   return (
@@ -83,7 +130,7 @@ export default function SignupScreen() {
           placeholder="your@email.com"
           placeholderTextColor={C.textMuted}
           value={email}
-          onChangeText={setEmail}
+          onChangeText={(t) => { setEmail(t); setResetSent(false); }}
           autoCapitalize="none"
           keyboardType="email-address"
         />
@@ -97,6 +144,34 @@ export default function SignupScreen() {
           onChangeText={setPassword}
           secureTextEntry
         />
+
+        {/* Confirm password — signup only */}
+        {!isLogin && (
+          <>
+            <Text style={styles.label}>CONFIRM PASSWORD</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Re-enter your password"
+              placeholderTextColor={C.textMuted}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+            />
+          </>
+        )}
+
+        {/* Forgot password — login only */}
+        {isLogin && (
+          <TouchableOpacity
+            style={styles.forgotBtn}
+            onPress={handleForgotPassword}
+            disabled={loading || resetSent}
+          >
+            <Text style={[styles.forgotText, resetSent && { color: C.success }]}>
+              {resetSent ? "✓ Reset link sent — check your email" : "Forgot password?"}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
@@ -119,6 +194,8 @@ export default function SignupScreen() {
           onPress={() => {
             setIsLogin(!isLogin);
             setError("");
+            setResetSent(false);
+            setConfirmPassword("");
           }}
         >
           <Text style={styles.switchText}>
@@ -156,6 +233,16 @@ const styles = StyleSheet.create({
     color: C.text,
     fontSize: 15,
     marginBottom: Spacing.xl,
+  },
+  forgotBtn: {
+    alignSelf: "flex-end",
+    marginTop: -Spacing.lg,
+    marginBottom: Spacing.lg,
+  },
+  forgotText: {
+    color: C.accent,
+    fontSize: 13,
+    fontWeight: "500",
   },
   errorText: {
     color: C.error,
