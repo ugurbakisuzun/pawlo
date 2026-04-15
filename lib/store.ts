@@ -486,6 +486,7 @@ export const useStore = create<AppState>((set, get) => ({
 
     // Generate today's missions
     const missions = generateDailyMissions(
+      dog.active_program_slugs ?? [],
       dog.training_goals ?? [],
       dog.level,
     );

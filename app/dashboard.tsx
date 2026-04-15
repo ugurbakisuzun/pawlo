@@ -537,46 +537,7 @@ export default function DashboardScreen() {
 
                     // ── Undo completed mission (cascade by type) ──
                     if (done) {
-                      if (mission.type === "trick") {
-                        // Trick mission undo → also undo the trick from library
-                        // Find the trick completed today via xp_events
-                        const todayStart = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()).toISOString();
-                        const { data: xpEvents } = await supabase
-                          .from("xp_events")
-                          .select("amount, reason")
-                          .eq("dog_id", dog.id)
-                          .gte("created_at", todayStart)
-                          .like("reason", "% trick")
-                          .order("created_at", { ascending: false })
-                          .limit(1);
-                        const trickReason = xpEvents?.[0]?.reason ?? "";
-                        const trickName = trickReason.replace(" trick", "");
-                        const matchedTrick = tricks.find((t) => t.name === trickName);
-
-                        const trickInfo = matchedTrick
-                          ? `\nThis will also undo "${matchedTrick.name}" (-${matchedTrick.xp_reward} XP) from Trick Library.`
-                          : "";
-
-                        Alert.alert(
-                          "Undo Trick Mission?",
-                          `Undo "${mission.title}"?${trickInfo}\n\nDaily mission XP (-${mission.xp_reward}) and related badges will also be revoked.`,
-                          [
-                            { text: "Cancel", style: "cancel" },
-                            {
-                              text: "Undo All",
-                              style: "destructive",
-                              onPress: async () => {
-                                if (matchedTrick) {
-                                  await fullUndoTrick(matchedTrick.id, matchedTrick.xp_reward);
-                                } else {
-                                  await undoDailyMission(dog.id, mission.id);
-                                }
-                                await finishUndo();
-                              },
-                            },
-                          ],
-                        );
-                      } else if (mission.type === "sa_session") {
+                      if (mission.type === "sa_session") {
                         // Training session undo → also undo today's training session
                         Alert.alert(
                           "Undo Training Session?",
@@ -631,10 +592,6 @@ export default function DashboardScreen() {
                       } else {
                         Alert.alert("All done for today!", "You've completed today's program sessions. Come back tomorrow.");
                       }
-                      return;
-                    }
-                    if (mission.type === "trick") {
-                      router.push("/tricks" as any);
                       return;
                     }
                     // Quick challenge — confirm and complete

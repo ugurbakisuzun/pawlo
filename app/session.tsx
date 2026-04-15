@@ -435,9 +435,6 @@ Use the dog's name. Be concise and jargon-free.`,
         if (m.type === "sa_session" && !isTrickMode) {
           await completeDailyMission(dog.id, m.id);
         }
-        if (m.type === "trick" && isTrickMode) {
-          await completeDailyMission(dog.id, m.id);
-        }
       }
 
       await loadBadges(dog.id);
