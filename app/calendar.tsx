@@ -460,15 +460,7 @@ export default function CalendarScreen() {
           <Text style={styles.trackingSectionTitle}>Health & Tracking</Text>
           <TouchableOpacity
             style={styles.trackingLink}
-            onPress={() => router.push("/health" as any)}
-          >
-            <Text style={styles.trackingLinkIcon}>🏥</Text>
-            <Text style={styles.trackingLinkText}>Health Overview</Text>
-            <Text style={styles.trackingLinkArrow}>→</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.trackingLink}
-            onPress={() => router.push("/health" as any)}
+            onPress={() => router.push("/health?tab=weight" as any)}
           >
             <Text style={styles.trackingLinkIcon}>⚖️</Text>
             <Text style={styles.trackingLinkText}>Weight Log</Text>
@@ -476,7 +468,7 @@ export default function CalendarScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.trackingLink}
-            onPress={() => router.push("/health" as any)}
+            onPress={() => router.push("/health?tab=vaccinations" as any)}
           >
             <Text style={styles.trackingLinkIcon}>💉</Text>
             <Text style={styles.trackingLinkText}>Vaccinations</Text>
@@ -484,7 +476,7 @@ export default function CalendarScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.trackingLink}
-            onPress={() => router.push("/health" as any)}
+            onPress={() => router.push("/health?tab=medications" as any)}
           >
             <Text style={styles.trackingLinkIcon}>💊</Text>
             <Text style={styles.trackingLinkText}>Medications</Text>

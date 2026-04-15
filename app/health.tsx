@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   Alert,
@@ -59,7 +59,11 @@ function todayStr(): string {
 
 export default function HealthScreen() {
   const { dog } = useStore();
-  const [tab, setTab] = useState<Tab>("weight");
+  const params = useLocalSearchParams();
+  const initialTab = (["weight", "vaccinations", "medications"] as Tab[]).includes(params.tab as Tab)
+    ? (params.tab as Tab)
+    : "weight";
+  const [tab, setTab] = useState<Tab>(initialTab);
 
   // Weight
   const [weights, setWeights] = useState<WeightLog[]>([]);
