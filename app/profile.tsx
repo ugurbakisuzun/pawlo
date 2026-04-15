@@ -14,7 +14,7 @@ import {
   View,
 } from "react-native";
 import { Colors, Palette, Radius, Spacing } from "../constants/theme";
-import { useStore } from "../lib/store";
+import { getRarityColor, useStore } from "../lib/store";
 import { supabase } from "../lib/supabase";
 import { isPurchasesConfigured, showManageSubscriptions } from "../lib/purchases";
 import {
@@ -62,7 +62,7 @@ function parseBirthday(bday: string | undefined, years: string[]): { mIdx: numbe
 }
 
 export default function ProfileScreen() {
-  const { dog, setDog, isPro, setProForDev } = useStore();
+  const { dog, setDog, isPro, setProForDev, allBadges, earnedBadgeIds } = useStore();
   const [email, setEmail] = useState<string>("");
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -793,6 +793,55 @@ export default function ProfileScreen() {
 
           {!editing && (
             <>
+              {/* ── Badges ── */}
+              {allBadges.length > 0 && (
+                <View style={styles.badgesSection}>
+                  <View style={styles.badgesSectionHeader}>
+                    <Text style={styles.badgesSectionTitle}>Badges</Text>
+                    <TouchableOpacity onPress={() => router.push("/badges" as any)}>
+                      <Text style={styles.badgesSectionLink}>
+                        {earnedBadgeIds.length}/{allBadges.length} earned →
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ gap: 10 }}
+                    style={{ marginTop: 12 }}
+                  >
+                    {allBadges.slice(0, 10).map((badge) => {
+                      const earned = earnedBadgeIds.includes(badge.id);
+                      return (
+                        <TouchableOpacity
+                          key={badge.id}
+                          style={[styles.badgeCard, !earned && styles.badgeCardLocked]}
+                          onPress={() => router.push("/badges" as any)}
+                        >
+                          <Text style={[styles.badgeEmoji2, !earned && { opacity: 0.3 }]}>
+                            {badge.emoji}
+                          </Text>
+                          <Text
+                            style={[styles.badgeName2, !earned && { color: C.textMuted }]}
+                            numberOfLines={2}
+                          >
+                            {badge.name}
+                          </Text>
+                          {earned && (
+                            <View style={[styles.badgeRarity2, { backgroundColor: getRarityColor(badge.rarity) + "25" }]}>
+                              <Text style={{ color: getRarityColor(badge.rarity), fontSize: 10, fontWeight: "600" }}>
+                                {badge.rarity}
+                              </Text>
+                            </View>
+                          )}
+                          {!earned && <Text style={{ fontSize: 12 }}>🔒</Text>}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              )}
+
               {/* ── Quick links ── */}
               <View style={styles.quickLinks}>
                 <TouchableOpacity
@@ -1143,6 +1192,34 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg, paddingVertical: 12, alignItems: "center",
   },
   deleteBtnText: { color: "#E76F51", fontSize: 14, fontWeight: "700" },
+  badgesSection: {
+    marginTop: 24,
+    borderTopWidth: 1,
+    borderTopColor: C.border,
+    paddingTop: 20,
+  },
+  badgesSectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  badgesSectionTitle: { color: C.text, fontSize: 16, fontWeight: "700" },
+  badgesSectionLink: { color: C.accent, fontSize: 13 },
+  badgeCard: {
+    width: 90,
+    backgroundColor: C.surface,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: Radius.lg,
+    padding: 12,
+    alignItems: "center",
+    gap: 6,
+  },
+  badgeCardLocked: { opacity: 0.5 },
+  badgeEmoji2: { fontSize: 28 },
+  badgeName2: { color: C.text, fontSize: 11, fontWeight: "600", textAlign: "center" },
+  badgeRarity2: { borderRadius: Radius.full, paddingHorizontal: 8, paddingVertical: 2 },
+
   quickLinks: {
     marginTop: 24,
     marginBottom: 24,

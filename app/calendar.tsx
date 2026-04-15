@@ -455,6 +455,43 @@ export default function CalendarScreen() {
           })
         )}
 
+        {/* ── Health & Tracking ── */}
+        <View style={styles.trackingSection}>
+          <Text style={styles.trackingSectionTitle}>Health & Tracking</Text>
+          <TouchableOpacity
+            style={styles.trackingLink}
+            onPress={() => router.push("/health" as any)}
+          >
+            <Text style={styles.trackingLinkIcon}>🏥</Text>
+            <Text style={styles.trackingLinkText}>Health Overview</Text>
+            <Text style={styles.trackingLinkArrow}>→</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.trackingLink}
+            onPress={() => router.push("/health" as any)}
+          >
+            <Text style={styles.trackingLinkIcon}>⚖️</Text>
+            <Text style={styles.trackingLinkText}>Weight Log</Text>
+            <Text style={styles.trackingLinkArrow}>→</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.trackingLink}
+            onPress={() => router.push("/health" as any)}
+          >
+            <Text style={styles.trackingLinkIcon}>💉</Text>
+            <Text style={styles.trackingLinkText}>Vaccinations</Text>
+            <Text style={styles.trackingLinkArrow}>→</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.trackingLink}
+            onPress={() => router.push("/health" as any)}
+          >
+            <Text style={styles.trackingLinkIcon}>💊</Text>
+            <Text style={styles.trackingLinkText}>Medications</Text>
+            <Text style={styles.trackingLinkArrow}>→</Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={{ height: 40 }} />
       </ScrollView>
     </View>
@@ -462,6 +499,31 @@ export default function CalendarScreen() {
 }
 
 const styles = StyleSheet.create({
+  // ── Health & Tracking ──
+  trackingSection: {
+    marginHorizontal: Spacing.xl,
+    marginTop: 28,
+    borderTopWidth: 1,
+    borderTopColor: C.border,
+    paddingTop: 20,
+  },
+  trackingSectionTitle: {
+    color: C.text,
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 12,
+  },
+  trackingLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+  },
+  trackingLinkIcon: { fontSize: 20, width: 32 },
+  trackingLinkText: { flex: 1, color: C.text, fontSize: 15, fontWeight: "600" },
+  trackingLinkArrow: { color: C.textMuted, fontSize: 16 },
+
   loadingContainer: {
     flex: 1,
     backgroundColor: C.background,

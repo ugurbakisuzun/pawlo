@@ -707,57 +707,76 @@ export default function DashboardScreen() {
           </View>
         )}
 
-        {/* ── Badges Section ── */}
-        {allBadges.length > 0 && (
-          <>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Badges</Text>
-              <TouchableOpacity onPress={() => router.push("/badges" as any)}>
-                <Text style={styles.sectionLink}>
-                  {earnedBadgeIds.length}/{allBadges.length} earned →
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.badgeScroll}
-              contentContainerStyle={{ paddingHorizontal: Spacing.xl, gap: 10 }}
-            >
-              {allBadges.slice(0, 10).map((badge) => {
-                const earned = earnedBadgeIds.includes(badge.id);
-                return (
-                  <TouchableOpacity
-                    key={badge.id}
-                    style={[styles.badgeCard, !earned && styles.badgeCardLocked]}
-                    onPress={() => router.push("/badges" as any)}
-                  >
-                    <Text style={[styles.badgeEmoji, !earned && { opacity: 0.3 }]}>
-                      {badge.emoji}
-                    </Text>
-                    <Text
-                      style={[styles.badgeName, !earned && { color: C.textMuted }]}
-                      numberOfLines={2}
-                    >
-                      {badge.name}
-                    </Text>
-                    {earned && (
-                      <View style={[styles.badgeRarity, { backgroundColor: getRarityColor(badge.rarity) + "25" }]}>
-                        <Text style={[styles.badgeRarityText, { color: getRarityColor(badge.rarity) }]}>
-                          {badge.rarity}
+        {/* ── Trick Library ── */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Trick Library</Text>
+          <TouchableOpacity onPress={() => router.push("/tricks" as any)}>
+            <Text style={styles.sectionLink}>See all →</Text>
+          </TouchableOpacity>
+        </View>
+
+        {unlockedTricks.length === 0 ? (
+          <View style={styles.emptyMissions}>
+            <Text style={styles.emptyText}>
+              Complete your training to unlock tricks! 🔒
+            </Text>
+          </View>
+        ) : (
+          unlockedTricks.slice(0, 5).map((trick) => {
+            const done = completedMissions.includes(trick.id);
+            const proLocked = !isPro && !freeTrickIds.has(trick.id);
+            return (
+              <TouchableOpacity
+                key={trick.id}
+                style={[styles.missionCard, done && styles.missionDone]}
+                onPress={() =>
+                  proLocked ? router.push("/paywall" as any) : handleTrickPress(trick)
+                }
+              >
+                <View style={styles.missionIcon}>
+                  <Text style={{ fontSize: 22 }}>
+                    {proLocked
+                      ? "🔒"
+                      : done
+                        ? "✅"
+                        : (CATEGORY_ICONS[trick.category] ?? "🐾")}
+                  </Text>
+                </View>
+                <View style={styles.missionInfo}>
+                  <Text style={styles.missionTitle}>{trick.name}</Text>
+                  <View style={styles.missionMeta}>
+                    <Text style={styles.missionCategory}>{trick.category}</Text>
+                    {proLocked ? (
+                      <View style={styles.proPill}>
+                        <Text style={styles.proPillText}>PRO</Text>
+                      </View>
+                    ) : (
+                      <View style={styles.xpPill}>
+                        <Text style={styles.xpPillText}>
+                          {done ? `−${trick.xp_reward} XP to undo` : `+${trick.xp_reward} XP`}
                         </Text>
                       </View>
                     )}
-                    {!earned && <Text style={styles.badgeLock}>🔒</Text>}
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </>
+                  </View>
+                </View>
+                <View style={[styles.checkCircle, done ? styles.checkDone : styles.checkTodo]}>
+                  {done && <Text style={styles.checkMark}>✓</Text>}
+                </View>
+              </TouchableOpacity>
+            );
+          })
         )}
 
-        {/* Streak Banner + Trick Library removed — streaks shown in XP card,
-            tricks accessible from Tricks screen via nav or "Browse tricks" link */}
+        {unlockedTricks.length > 5 && (
+          <TouchableOpacity
+            style={styles.viewAllBtn}
+            onPress={() => router.push("/tricks" as any)}
+          >
+            <Text style={styles.viewAllText}>
+              View all {unlockedTricks.length} tricks →
+            </Text>
+          </TouchableOpacity>
+        )}
 
         <View style={{ height: 100 }} />
       </ScrollView>
@@ -780,8 +799,8 @@ export default function DashboardScreen() {
           style={styles.navItem}
           onPress={() => router.push("/calendar" as any)}
         >
-          <Text style={styles.navIcon}>📅</Text>
-          <Text style={styles.navLabel}>Calendar</Text>
+          <Text style={styles.navIcon}>📊</Text>
+          <Text style={styles.navLabel}>Tracking</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.navItem}
