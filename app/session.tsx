@@ -273,16 +273,13 @@ export default function SessionScreen() {
     finishStepFlow(stepIndex);
   };
 
-  const submitTextObservation = (stepIndex: number) => {
+  const submitTextObservation = () => {
     if (!textInput.trim()) return;
+    // Just show the transcript — don't save yet. The user reviews it
+    // in the transcriptBox and taps "Save & continue" to confirm or
+    // "Try again" to redo. Same flow as voice input.
     setCurrentTranscript(textInput.trim());
-    setObservations((prev) => [
-      ...prev.filter((o) => o.stepIndex !== stepIndex),
-      { stepIndex, transcript: textInput.trim() },
-    ]);
     setTextInput("");
-    setActivePromptIndex(null);
-    finishStepFlow(stepIndex);
   };
 
   const tryAgain = () => {
@@ -713,7 +710,7 @@ Use the dog's name. Be concise and jargon-free.`,
                       />
                       <TouchableOpacity
                         style={[styles.sendBtn, !textInput.trim() && styles.sendBtnDisabled]}
-                        onPress={() => submitTextObservation(index)}
+                        onPress={() => submitTextObservation()}
                         disabled={!textInput.trim()}
                       >
                         <Text style={[styles.sendBtnText, !textInput.trim() && styles.sendBtnTextDisabled]}>
