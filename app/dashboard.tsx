@@ -16,7 +16,7 @@ import { ALL_MISSIONS_BONUS_XP } from "../lib/missions";
 import { computeLevel, getLevelInfo, getRarityColor, useStore } from "../lib/store";
 import { supabase } from "../lib/supabase";
 
-const C = Colors.dark;
+const C = Colors.light;
 
 interface Trick {
   id: string;
@@ -371,7 +371,7 @@ export default function DashboardScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
       <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
         {/* ── Header ── */}
         <View style={styles.header}>

@@ -8,12 +8,12 @@ import {
 } from "react-native";
 import { Colors, Palette, Radius } from "../constants/theme";
 
-const C = Colors.dark;
+const C = Colors.light;
 
 export default function ModalScreen() {
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
       <Text style={styles.emoji}>🐾</Text>
       <Text style={styles.title}>Pawlo</Text>
       <Text style={styles.subtitle}>

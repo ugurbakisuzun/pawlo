@@ -12,7 +12,7 @@ import {
 import { Colors, Palette, Radius } from "../constants/theme";
 import { getLevelInfo } from "../lib/store";
 
-const C = Colors.dark;
+const C = Colors.light;
 
 export default function LevelUpScreen() {
   const params = useLocalSearchParams();
@@ -57,7 +57,7 @@ export default function LevelUpScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
       <View style={styles.glowBg} />
 
       {["🎉", "⭐", "🏅", "✨", "🎊", "🐾"].map((emoji, i) => (

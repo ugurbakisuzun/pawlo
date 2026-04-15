@@ -7,7 +7,7 @@ import RealMapView, {
 } from "react-native-maps";
 import { Colors, Radius } from "../constants/theme";
 
-const C = Colors.dark;
+const C = Colors.light;
 
 // Android requires a Google Maps API key in app.json (android.config.googleMaps.apiKey).
 // As of v1.0.1 (commit landing this change) the key is wired up and restricted to
@@ -60,9 +60,9 @@ export function Marker(props: React.ComponentProps<typeof RealMarker>) {
 
 const styles = StyleSheet.create({
   placeholder: {
-    backgroundColor: "rgba(255,255,255,0.04)",
+    backgroundColor: "rgba(15,11,46,0.05)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+    borderColor: "rgba(15,11,46,0.06)",
     borderRadius: Radius.lg,
     alignItems: "center",
     justifyContent: "center",

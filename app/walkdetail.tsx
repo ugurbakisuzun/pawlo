@@ -14,7 +14,7 @@ import { MapView, Marker, Polyline } from "../components/MapViewSafe";
 import { Colors, Palette, Radius } from "../constants/theme";
 import { supabase } from "../lib/supabase";
 
-const C = Colors.dark;
+const C = Colors.light;
 
 interface WalkData {
   id: string;
@@ -131,7 +131,7 @@ export default function WalkDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
 
       {/* Header */}
       <View style={styles.header}>

@@ -17,7 +17,7 @@ import { SoundPanel } from "../components/SoundPanel";
 import { computeLevel, useStore } from "../lib/store";
 import { supabase } from "../lib/supabase";
 
-const C = Colors.dark;
+const C = Colors.light;
 
 // ── Speech recognition (optional — falls back to TextInput in Expo Go) ──
 
@@ -493,7 +493,7 @@ Use the dog's name. Be concise and jargon-free.`,
   if (sessionPhase === "summary") {
     return (
       <View style={styles.container}>
-        <StatusBar barStyle="light-content" />
+        <StatusBar barStyle="dark-content" />
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.summaryScroll}>
           <Text style={styles.summaryEmoji}>🎉</Text>
           <Text style={styles.summaryTitle}>Session complete!</Text>
@@ -568,7 +568,7 @@ Use the dog's name. Be concise and jargon-free.`,
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
       <SoundPanel />
       <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false}>
         {/* Top bar */}
@@ -855,7 +855,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "rgba(15,11,46,0.06)",
     alignItems: "center",
     justifyContent: "center",
   },

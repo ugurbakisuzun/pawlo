@@ -14,7 +14,7 @@ import { SoundPanel } from "../components/SoundPanel";
 import { computeLevel, useStore } from "../lib/store";
 import { supabase } from "../lib/supabase";
 
-const C = Colors.dark;
+const C = Colors.light;
 
 interface Trick {
   id: string;
@@ -140,7 +140,7 @@ export default function TricksScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
 
       {/* ── Header ── */}
       <View style={styles.header}>
@@ -200,11 +200,11 @@ export default function TricksScreen() {
                 done && styles.trickCardDone,
                 {
                   backgroundColor: anyLock
-                    ? "rgba(255,255,255,0.02)"
+                    ? "rgba(15,11,46,0.03)"
                     : done
                       ? "rgba(29,158,117,0.06)"
                       : (CATEGORY_COLORS[trick.category] ??
-                        "rgba(255,255,255,0.04)"),
+                        "rgba(15,11,46,0.05)"),
                 },
               ]}
               onPress={() => handleTrickPress(trick)}
@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 10,
   },
-  trickCardLocked: { borderColor: "rgba(255,255,255,0.04)" },
+  trickCardLocked: { borderColor: "rgba(15,11,46,0.05)" },
   trickCardDone: { borderColor: "rgba(29,158,117,0.25)" },
   trickHeader: {
     flexDirection: "row",

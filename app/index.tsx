@@ -13,7 +13,7 @@ import { useStore } from "../lib/store";
 const TERMS_URL = "https://pawlo.so/terms";
 const PRIVACY_URL = "https://pawlo.so/privacy";
 
-const C = Colors.dark;
+const C = Colors.light;
 
 export default function OnboardingScreen() {
   const userId = useStore((s) => s.userId);
@@ -28,7 +28,7 @@ export default function OnboardingScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
 
       {/* ── Hero ── */}
       <View style={styles.hero}>

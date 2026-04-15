@@ -3,7 +3,7 @@ import { Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native
 import { Colors, Palette, Radius } from "../constants/theme";
 import { playClicker, playWhistle } from "../lib/sounds";
 
-const C = Colors.dark;
+const C = Colors.light;
 
 /**
  * Floating bottom-right widget with two training tools — clicker + whistle.
@@ -71,6 +71,6 @@ const styles = StyleSheet.create({
   divider: {
     width: 1,
     height: 22,
-    backgroundColor: "rgba(255,255,255,0.12)",
+    backgroundColor: "rgba(15,11,46,0.08)",
   },
 });

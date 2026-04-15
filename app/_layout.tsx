@@ -62,7 +62,7 @@ export default function RootLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: Palette.questNight },
+          contentStyle: { backgroundColor: Palette.boneWhite },
           animation: "slide_from_right",
         }}
       >

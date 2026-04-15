@@ -18,7 +18,7 @@ import { Colors, Palette, Radius } from "../constants/theme";
 import { useStore } from "../lib/store";
 import { supabase } from "../lib/supabase";
 
-const C = Colors.dark;
+const C = Colors.light;
 
 let ExpoSpeechRecognitionModule: any = null;
 let useSpeechRecognitionEvent: any = () => {};
@@ -246,7 +246,7 @@ Rules: Always call the dog by name. Max 3 short paragraphs. Give numbered action
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
 
       {/* ── Header ── */}
       <View style={styles.header}>

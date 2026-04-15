@@ -14,7 +14,7 @@ import { Colors, Palette, Radius, Spacing } from "../constants/theme";
 import { useStore } from "../lib/store";
 import { supabase } from "../lib/supabase";
 
-const C = Colors.dark;
+const C = Colors.light;
 
 interface LeaderboardEntry {
   dog_id: string;
@@ -68,7 +68,7 @@ export default function LeaderboardScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
 
       {/* Header */}
       <View style={styles.header}>

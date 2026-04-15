@@ -24,7 +24,7 @@ import {
 } from "../lib/purchases";
 import { useStore } from "../lib/store";
 
-const C = Colors.dark;
+const C = Colors.light;
 
 interface PaywallFeature {
   emoji: string;
@@ -104,7 +104,7 @@ export default function PaywallScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
 
       {/* Header */}
       <View style={styles.header}>

@@ -17,7 +17,7 @@ import { Colors, Palette, Radius } from "../constants/theme";
 import { computeLevel, useStore } from "../lib/store";
 import { supabase } from "../lib/supabase";
 
-const C = Colors.dark;
+const C = Colors.light;
 const { width: SCREEN_W } = Dimensions.get("window");
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -298,7 +298,7 @@ export default function WalkScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
 
       {/* Header */}
       <View style={styles.header}>

@@ -17,7 +17,7 @@ import { Colors, Palette, Radius, Spacing } from "../constants/theme";
 import { useStore } from "../lib/store";
 import { supabase } from "../lib/supabase";
 
-const C = Colors.dark;
+const C = Colors.light;
 const SCREEN_W = Dimensions.get("window").width;
 
 type Tab = "weight" | "vaccinations" | "medications";
@@ -256,7 +256,7 @@ export default function HealthScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
 
       {/* Header */}
       <View style={styles.header}>

@@ -29,7 +29,7 @@ import {
   calcAge,
 } from "./setup";
 
-const C = Colors.dark;
+const C = Colors.light;
 
 const PROGRAM_LABELS: Record<string, { title: string; emoji: string }> = {
   "separation-anxiety": { title: "Separation Anxiety", emoji: "🏠" },
@@ -354,7 +354,7 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
 
       {/* ── Header ── */}
       <View style={styles.header}>

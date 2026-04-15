@@ -15,7 +15,7 @@ import {
 import { Colors, Palette, Radius, Spacing } from "../constants/theme";
 import { supabase } from "../lib/supabase";
 
-const C = Colors.dark;
+const C = Colors.light;
 
 export default function SignupScreen() {
   const params = useLocalSearchParams();
@@ -104,7 +104,7 @@ export default function SignupScreen() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
 
       {/* ── Top ── */}
       <View style={styles.top}>

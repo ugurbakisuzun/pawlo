@@ -2,7 +2,7 @@ import { Component, type ReactNode } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Colors, Palette, Radius, Spacing } from "../constants/theme";
 
-const C = Colors.dark;
+const C = Colors.light;
 
 interface Props {
   children: ReactNode;
