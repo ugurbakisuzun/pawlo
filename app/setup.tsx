@@ -4,6 +4,7 @@ import {
   Animated,
   Dimensions,
   FlatList,
+  Keyboard,
   Platform,
   ScrollView,
   StatusBar,
@@ -618,58 +619,57 @@ export default function SetupScreen() {
               </View>
             ) : null}
 
-            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-              {breedSearch.length > 0 ? (
-                filteredBreeds.length > 0 ? (
-                  filteredBreeds.map((b) => (
+            {/* Hide breed list when a breed is already selected */}
+            {!selectedBreed && (
+              <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                {breedSearch.length > 0 ? (
+                  filteredBreeds.length > 0 ? (
+                    filteredBreeds.map((b) => (
+                      <TouchableOpacity
+                        key={b}
+                        style={[styles.listRow, selectedBreed === b && styles.listRowSelected]}
+                        onPress={() => { setSelectedBreed(b); setBreedSearch(""); Keyboard.dismiss(); }}
+                      >
+                        <Text style={[styles.listRowText, selectedBreed === b && styles.listRowTextSelected]}>
+                          {b}
+                        </Text>
+                      </TouchableOpacity>
+                    ))
+                  ) : (
                     <TouchableOpacity
-                      key={b}
-                      style={[styles.listRow, selectedBreed === b && styles.listRowSelected]}
-                      onPress={() => { setSelectedBreed(b); setBreedSearch(""); }}
+                      style={styles.addBreedBtn}
+                      onPress={() => { setSelectedBreed(breedSearch.trim()); setBreedSearch(""); Keyboard.dismiss(); }}
                     >
-                      <Text style={[styles.listRowText, selectedBreed === b && styles.listRowTextSelected]}>
-                        {b}
-                      </Text>
+                      <Text style={styles.addBreedText}>+ Add "{breedSearch.trim()}" as breed</Text>
                     </TouchableOpacity>
-                  ))
+                  )
                 ) : (
-                  <TouchableOpacity
-                    style={styles.addBreedBtn}
-                    onPress={() => { setSelectedBreed(breedSearch.trim()); setBreedSearch(""); }}
-                  >
-                    <Text style={styles.addBreedText}>+ Add "{breedSearch.trim()}" as breed</Text>
-                  </TouchableOpacity>
-                )
-              ) : (
-                <>
-                  <Text style={styles.sectionLabel}>POPULAR</Text>
-                  {POPULAR_BREEDS.map((b) => (
-                    <TouchableOpacity
-                      key={b}
-                      style={[styles.listRow, selectedBreed === b && styles.listRowSelected]}
-                      onPress={() => setSelectedBreed(b)}
-                    >
-                      <Text style={[styles.listRowText, selectedBreed === b && styles.listRowTextSelected]}>
-                        {b}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                  <Text style={[styles.sectionLabel, { marginTop: 16 }]}>ALL BREEDS</Text>
-                  {ALL_BREEDS.map((b) => (
-                    <TouchableOpacity
-                      key={b}
-                      style={[styles.listRow, selectedBreed === b && styles.listRowSelected]}
-                      onPress={() => setSelectedBreed(b)}
-                    >
-                      <Text style={[styles.listRowText, selectedBreed === b && styles.listRowTextSelected]}>
-                        {b}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </>
-              )}
-              <View style={{ height: 40 }} />
-            </ScrollView>
+                  <>
+                    <Text style={styles.sectionLabel}>POPULAR</Text>
+                    {POPULAR_BREEDS.map((b) => (
+                      <TouchableOpacity
+                        key={b}
+                        style={styles.listRow}
+                        onPress={() => { setSelectedBreed(b); Keyboard.dismiss(); }}
+                      >
+                        <Text style={styles.listRowText}>{b}</Text>
+                      </TouchableOpacity>
+                    ))}
+                    <Text style={[styles.sectionLabel, { marginTop: 16 }]}>ALL BREEDS</Text>
+                    {ALL_BREEDS.map((b) => (
+                      <TouchableOpacity
+                        key={b}
+                        style={styles.listRow}
+                        onPress={() => { setSelectedBreed(b); Keyboard.dismiss(); }}
+                      >
+                        <Text style={styles.listRowText}>{b}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </>
+                )}
+                <View style={{ height: 40 }} />
+              </ScrollView>
+            )}
           </View>
         );
 
@@ -805,7 +805,7 @@ export default function SetupScreen() {
           <View style={styles.stepCenter}>
             <Text style={styles.emoji}>👨‍👩‍👦</Text>
             <Text style={styles.stepTitle}>
-              Do you take care of {dogName}{"\n"}together with someone?
+              Do others help take{"\n"}care of {dogName}?
             </Text>
             <View style={styles.twoCardRow}>
               <TouchableOpacity
@@ -821,9 +821,9 @@ export default function SetupScreen() {
                 style={[styles.bigCard, hasCoparent === true && styles.bigCardSelected]}
                 onPress={() => setHasCoparent(true)}
               >
-                <Text style={styles.bigCardEmoji}>👫</Text>
+                <Text style={styles.bigCardEmoji}>👨‍👩‍👧‍👦</Text>
                 <Text style={[styles.bigCardLabel, hasCoparent === true && styles.bigCardLabelSelected]}>
-                  Yes
+                  Yes, family or friends
                 </Text>
               </TouchableOpacity>
             </View>

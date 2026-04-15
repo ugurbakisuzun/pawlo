@@ -1,3 +1,4 @@
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -86,6 +87,26 @@ export default function HealthScreen() {
   const [medDosage, setMedDosage] = useState("");
   const [medFrequency, setMedFrequency] = useState("");
   const [medStartDate, setMedStartDate] = useState(todayStr());
+
+  // Date picker state — which field is currently showing the picker
+  const [datePickerField, setDatePickerField] = useState<string | null>(null);
+
+  const parseDateSafe = (str: string): Date => {
+    const d = new Date(str + "T12:00:00");
+    return isNaN(d.getTime()) ? new Date() : d;
+  };
+  const formatDateISO = (d: Date): string => {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+  const handleDateChange = (_: any, selectedDate?: Date) => {
+    const field = datePickerField;
+    setDatePickerField(null);
+    if (!selectedDate || !field) return;
+    const iso = formatDateISO(selectedDate);
+    if (field === "vaxDate") setVaxDate(iso);
+    else if (field === "vaxNextDue") setVaxNextDue(iso);
+    else if (field === "medStartDate") setMedStartDate(iso);
+  };
 
   useEffect(() => {
     if (dog) {
@@ -391,8 +412,24 @@ export default function HealthScreen() {
               <View style={styles.formCard}>
                 <Text style={styles.formTitle}>Add Vaccination</Text>
                 <TextInput style={styles.input} placeholder="Vaccine name (e.g. Rabies)" placeholderTextColor={C.textMuted} value={vaxName} onChangeText={setVaxName} autoFocus />
-                <TextInput style={styles.input} placeholder={`Date given (${todayStr()})`} placeholderTextColor={C.textMuted} value={vaxDate} onChangeText={setVaxDate} />
-                <TextInput style={styles.input} placeholder="Next due date (YYYY-MM-DD)" placeholderTextColor={C.textMuted} value={vaxNextDue} onChangeText={setVaxNextDue} />
+                <TouchableOpacity style={styles.dateField} onPress={() => setDatePickerField("vaxDate")}>
+                  <Text style={vaxDate ? styles.dateFieldText : styles.dateFieldPlaceholder}>
+                    {vaxDate ? formatDate(vaxDate) : "Date given"}
+                  </Text>
+                  <Text style={styles.dateFieldIcon}>📅</Text>
+                </TouchableOpacity>
+                {datePickerField === "vaxDate" && (
+                  <DateTimePicker value={parseDateSafe(vaxDate)} mode="date" display="default" onChange={handleDateChange} />
+                )}
+                <TouchableOpacity style={styles.dateField} onPress={() => setDatePickerField("vaxNextDue")}>
+                  <Text style={vaxNextDue ? styles.dateFieldText : styles.dateFieldPlaceholder}>
+                    {vaxNextDue ? formatDate(vaxNextDue) : "Next due date (optional)"}
+                  </Text>
+                  <Text style={styles.dateFieldIcon}>📅</Text>
+                </TouchableOpacity>
+                {datePickerField === "vaxNextDue" && (
+                  <DateTimePicker value={parseDateSafe(vaxNextDue || todayStr())} mode="date" display="default" onChange={handleDateChange} />
+                )}
                 <TextInput style={styles.input} placeholder="Vet name (optional)" placeholderTextColor={C.textMuted} value={vaxVet} onChangeText={setVaxVet} />
                 <View style={styles.formBtns}>
                   <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowAddVax(false)}>
@@ -435,7 +472,15 @@ export default function HealthScreen() {
                 <TextInput style={styles.input} placeholder="Medication name" placeholderTextColor={C.textMuted} value={medName} onChangeText={setMedName} autoFocus />
                 <TextInput style={styles.input} placeholder="Dosage (e.g. 10mg)" placeholderTextColor={C.textMuted} value={medDosage} onChangeText={setMedDosage} />
                 <TextInput style={styles.input} placeholder="Frequency (e.g. Twice daily)" placeholderTextColor={C.textMuted} value={medFrequency} onChangeText={setMedFrequency} />
-                <TextInput style={styles.input} placeholder={`Start date (${todayStr()})`} placeholderTextColor={C.textMuted} value={medStartDate} onChangeText={setMedStartDate} />
+                <TouchableOpacity style={styles.dateField} onPress={() => setDatePickerField("medStartDate")}>
+                  <Text style={medStartDate ? styles.dateFieldText : styles.dateFieldPlaceholder}>
+                    {medStartDate ? formatDate(medStartDate) : "Start date"}
+                  </Text>
+                  <Text style={styles.dateFieldIcon}>📅</Text>
+                </TouchableOpacity>
+                {datePickerField === "medStartDate" && (
+                  <DateTimePicker value={parseDateSafe(medStartDate)} mode="date" display="default" onChange={handleDateChange} />
+                )}
                 <View style={styles.formBtns}>
                   <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowAddMed(false)}>
                     <Text style={styles.cancelText}>Cancel</Text>
@@ -557,6 +602,14 @@ const styles = StyleSheet.create({
     backgroundColor: C.background, borderWidth: 1, borderColor: C.border,
     borderRadius: Radius.md, padding: 12, color: C.text, fontSize: 14, marginBottom: 10,
   },
+  dateField: {
+    backgroundColor: C.background, borderWidth: 1, borderColor: C.border,
+    borderRadius: Radius.md, padding: 12, marginBottom: 10,
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+  },
+  dateFieldText: { color: C.text, fontSize: 14 },
+  dateFieldPlaceholder: { color: C.textMuted, fontSize: 14 },
+  dateFieldIcon: { fontSize: 16 },
   formBtns: { flexDirection: "row", gap: 10, marginTop: 4 },
   cancelBtn: { flex: 1, borderWidth: 1, borderColor: C.border, borderRadius: Radius.md, paddingVertical: 12, alignItems: "center" },
   cancelText: { color: C.textSecondary, fontSize: 14 },
