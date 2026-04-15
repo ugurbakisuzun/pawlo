@@ -418,6 +418,25 @@ export default function DashboardScreen() {
                 : `${xpToNext} XP to Level ${dog.level + 1}`}
             </Text>
           </View>
+
+          {/* Stats — inline inside the XP card */}
+          <View style={styles.statsRowInline}>
+            <View style={styles.statChipInline}>
+              <Text style={styles.statIcon}>🔥</Text>
+              <Text style={[styles.statVal, { color: C.xp }]}>{dog.streak_days}</Text>
+              <Text style={styles.statLbl}>Streak</Text>
+            </View>
+            <View style={styles.statChipInline}>
+              <Text style={styles.statIcon}>⭐</Text>
+              <Text style={styles.statVal}>{dog.total_xp}</Text>
+              <Text style={styles.statLbl}>XP</Text>
+            </View>
+            <View style={styles.statChipInline}>
+              <Text style={styles.statIcon}>🏅</Text>
+              <Text style={[styles.statVal, { color: C.success }]}>Lv.{dog.level}</Text>
+              <Text style={styles.statLbl}>Level</Text>
+            </View>
+          </View>
         </View>
 
         {/* ── My Programs ── */}
@@ -495,28 +514,7 @@ export default function DashboardScreen() {
           </>
         )}
 
-        {/* ── Stats Row ── */}
-        <View style={styles.statsRow}>
-          <View style={styles.statChip}>
-            <Text style={styles.statIcon}>🔥</Text>
-            <Text style={[styles.statVal, { color: C.xp }]}>
-              {dog.streak_days}
-            </Text>
-            <Text style={styles.statLbl}>Day streak</Text>
-          </View>
-          <View style={styles.statChip}>
-            <Text style={styles.statIcon}>⭐</Text>
-            <Text style={styles.statVal}>{dog.total_xp}</Text>
-            <Text style={styles.statLbl}>Total XP</Text>
-          </View>
-          <View style={styles.statChip}>
-            <Text style={styles.statIcon}>🏅</Text>
-            <Text style={[styles.statVal, { color: C.success }]}>
-              Lv.{dog.level}
-            </Text>
-            <Text style={styles.statLbl}>Level</Text>
-          </View>
-        </View>
+        {/* Stats Row removed — merged into XP card above */}
 
         {/* ── Daily Missions ── */}
         {dailyMissions.length > 0 && (
@@ -758,103 +756,13 @@ export default function DashboardScreen() {
           </>
         )}
 
-        {/* ── Streak Banner ── */}
-        {dog.streak_days > 0 && (
-          <View style={styles.streakBanner}>
-            <Text style={styles.streakFlame}>🔥</Text>
-            <View>
-              <Text style={styles.streakTitle}>
-                {dog.streak_days}-day streak!
-              </Text>
-              <Text style={styles.streakSub}>
-                Keep it up — you're on a roll!
-              </Text>
-            </View>
-          </View>
-        )}
-
-        {/* ── Trick Library ── */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Trick Library</Text>
-          <TouchableOpacity onPress={() => router.push("/tricks" as any)}>
-            <Text style={styles.sectionLink}>See all →</Text>
-          </TouchableOpacity>
-        </View>
-
-        {unlockedTricks.length === 0 ? (
-          <View style={styles.emptyMissions}>
-            <Text style={styles.emptyText}>
-              Complete your training to unlock tricks! 🔒
-            </Text>
-          </View>
-        ) : (
-          unlockedTricks.slice(0, 5).map((trick) => {
-            const done = completedMissions.includes(trick.id);
-            const proLocked = !isPro && !freeTrickIds.has(trick.id);
-            return (
-              <TouchableOpacity
-                key={trick.id}
-                style={[styles.missionCard, done && styles.missionDone]}
-                onPress={() =>
-                  proLocked ? router.push("/paywall" as any) : handleTrickPress(trick)
-                }
-              >
-                <View style={styles.missionIcon}>
-                  <Text style={{ fontSize: 22 }}>
-                    {proLocked
-                      ? "🔒"
-                      : done
-                        ? "✅"
-                        : (CATEGORY_ICONS[trick.category] ?? "🐾")}
-                  </Text>
-                </View>
-                <View style={styles.missionInfo}>
-                  <Text style={styles.missionTitle}>{trick.name}</Text>
-                  <View style={styles.missionMeta}>
-                    <Text style={styles.missionCategory}>{trick.category}</Text>
-                    {proLocked ? (
-                      <View style={styles.proPill}>
-                        <Text style={styles.proPillText}>PRO</Text>
-                      </View>
-                    ) : (
-                      <View style={styles.xpPill}>
-                        <Text style={styles.xpPillText}>
-                          {done
-                            ? `−${trick.xp_reward} XP to undo`
-                            : `+${trick.xp_reward} XP`}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                </View>
-                <View
-                  style={[
-                    styles.checkCircle,
-                    done ? styles.checkDone : styles.checkTodo,
-                  ]}
-                >
-                  {done && <Text style={styles.checkMark}>✓</Text>}
-                </View>
-              </TouchableOpacity>
-            );
-          })
-        )}
-
-        {unlockedTricks.length > 5 && (
-          <TouchableOpacity
-            style={styles.viewAllBtn}
-            onPress={() => router.push("/tricks" as any)}
-          >
-            <Text style={styles.viewAllText}>
-              View all {unlockedTricks.length} tricks →
-            </Text>
-          </TouchableOpacity>
-        )}
+        {/* Streak Banner + Trick Library removed — streaks shown in XP card,
+            tricks accessible from Tricks screen via nav or "Browse tricks" link */}
 
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* ── Bottom Nav ── */}
+      {/* ── Bottom Nav (5 items) ── */}
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.navItem}>
           <Text style={styles.navIcon}>🏠</Text>
@@ -877,37 +785,17 @@ export default function DashboardScreen() {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.navItem}
-          onPress={() => router.push("/leaderboard" as any)}
-        >
-          <Text style={styles.navIcon}>🏆</Text>
-          <Text style={styles.navLabel}>Ranks</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.navItem}
           onPress={() => router.push("/advisor" as any)}
         >
-          <Text style={styles.navIcon}>🤖</Text>
-          <Text style={styles.navLabel}>AI</Text>
+          <Text style={styles.navIcon}>🐾</Text>
+          <Text style={styles.navLabel}>Pawlo</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.navItem}
-          onPress={() => {
-            if (dog?.track_health) {
-              router.push("/health" as any);
-            } else {
-              Alert.alert(
-                "Health Tracker",
-                "Enable health tracking in your dog's profile to access this feature.",
-                [
-                  { text: "Not now" },
-                  { text: "Open anyway", onPress: () => router.push("/health" as any) },
-                ],
-              );
-            }
-          }}
+          onPress={() => router.push("/profile" as any)}
         >
-          <Text style={styles.navIcon}>🏥</Text>
-          <Text style={styles.navLabel}>Health</Text>
+          <Text style={styles.navIcon}>👤</Text>
+          <Text style={styles.navLabel}>Profile</Text>
         </TouchableOpacity>
       </View>
 
@@ -1122,19 +1010,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  statsRow: {
+  statsRowInline: {
     flexDirection: "row",
-    paddingHorizontal: Spacing.xl,
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: C.border,
     gap: Spacing.sm,
-    marginBottom: Spacing.lg,
   },
-  statChip: {
+  statChipInline: {
     flex: 1,
-    backgroundColor: C.surface,
-    borderWidth: 1,
-    borderColor: C.border,
-    borderRadius: Radius.lg,
-    padding: 14,
     alignItems: "center",
   },
   statIcon: { fontSize: 16, marginBottom: 4 },
