@@ -793,6 +793,42 @@ export default function ProfileScreen() {
 
           {!editing && (
             <>
+              {/* ── Quick links ── */}
+              <View style={styles.quickLinks}>
+                <TouchableOpacity
+                  style={styles.quickLinkBtn}
+                  onPress={() => router.push("/health" as any)}
+                >
+                  <Text style={styles.quickLinkIcon}>🏥</Text>
+                  <Text style={styles.quickLinkText}>Health</Text>
+                  <Text style={styles.quickLinkArrow}>→</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.quickLinkBtn}
+                  onPress={() => router.push("/leaderboard" as any)}
+                >
+                  <Text style={styles.quickLinkIcon}>🏆</Text>
+                  <Text style={styles.quickLinkText}>Leaderboard</Text>
+                  <Text style={styles.quickLinkArrow}>→</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.quickLinkBtn}
+                  onPress={() => router.push("/tricks" as any)}
+                >
+                  <Text style={styles.quickLinkIcon}>🎯</Text>
+                  <Text style={styles.quickLinkText}>Trick Library</Text>
+                  <Text style={styles.quickLinkArrow}>→</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.quickLinkBtn}
+                  onPress={() => router.push("/badges" as any)}
+                >
+                  <Text style={styles.quickLinkIcon}>🏅</Text>
+                  <Text style={styles.quickLinkText}>All Badges</Text>
+                  <Text style={styles.quickLinkArrow}>→</Text>
+                </TouchableOpacity>
+              </View>
+
               <TouchableOpacity
                 style={styles.deleteBtn}
                 onPress={handleDeleteAccount}
@@ -1107,6 +1143,24 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg, paddingVertical: 12, alignItems: "center",
   },
   deleteBtnText: { color: "#E76F51", fontSize: 14, fontWeight: "700" },
+  quickLinks: {
+    marginTop: 24,
+    marginBottom: 24,
+    borderTopWidth: 1,
+    borderTopColor: C.border,
+    paddingTop: 20,
+  },
+  quickLinkBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+  },
+  quickLinkIcon: { fontSize: 20, width: 32 },
+  quickLinkText: { flex: 1, color: C.text, fontSize: 15, fontWeight: "600" },
+  quickLinkArrow: { color: C.textMuted, fontSize: 16 },
+
   signOutBtn: {
     marginTop: 8, backgroundColor: C.background,
     borderWidth: 1, borderColor: C.border,
