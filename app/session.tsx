@@ -19,6 +19,8 @@ import { supabase } from "../lib/supabase";
 
 const C = Colors.dark;
 
+// ── Speech recognition (optional — falls back to TextInput in Expo Go) ──
+
 let ExpoSpeechRecognitionModule: any = null;
 let useSpeechRecognitionEvent: any = () => {};
 try {
@@ -26,6 +28,8 @@ try {
   ExpoSpeechRecognitionModule = mod.ExpoSpeechRecognitionModule;
   useSpeechRecognitionEvent = mod.useSpeechRecognitionEvent;
 } catch {}
+
+// ── Types ───────────────────────────────────────────────────────────────
 
 interface ProgramStep {
   number: number;
@@ -42,18 +46,20 @@ interface ProgramDay {
   steps: ProgramStep[];
 }
 
-interface StepAnalysis {
+interface Observation {
   stepIndex: number;
   transcript: string;
-  feedback: string;
 }
 
+// ── Component ───────────────────────────────────────────────────────────
 
 export default function SessionScreen() {
   const params = useLocalSearchParams();
   const dayNumber = Number(params.day) || 1;
   const programSlug = (params.slug as string) || "separation-anxiety";
-  const programTitle = params.programTitle ? decodeURIComponent(params.programTitle as string) : "Training";
+  const programTitle = params.programTitle
+    ? decodeURIComponent(params.programTitle as string)
+    : "Training";
   const trickName = params.trickName as string | undefined;
   const trickDesc = params.trickDesc as string | undefined;
   const trickXp = Number(params.trickXp) || 80;
@@ -62,39 +68,53 @@ export default function SessionScreen() {
     ? JSON.parse(params.trickSteps as string)
     : undefined;
 
-  const { dog, setDog, syncCompletedTrick, checkAndAwardBadges, loadBadges, completeDailyMission, dailyMissions, completedDailyIds } = useStore();
+  const {
+    dog,
+    setDog,
+    syncCompletedTrick,
+    checkAndAwardBadges,
+    loadBadges,
+    completeDailyMission,
+    dailyMissions,
+    completedDailyIds,
+  } = useStore();
+
+  // ── Core state ──
   const [dayData, setDayData] = useState<ProgramDay | null>(null);
   const [loading, setLoading] = useState(true);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+  const [expandedStep, setExpandedStep] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
-  const [activePromptIndex, setActivePromptIndex] = useState<number | null>(
-    null,
-  );
+
+  // ── Observation / feedback ──
+  const [observations, setObservations] = useState<Observation[]>([]);
+  const [activePromptIndex, setActivePromptIndex] = useState<number | null>(null);
+  const [currentTranscript, setCurrentTranscript] = useState("");
   const [isListening, setIsListening] = useState(false);
-  const [isAnalysing, setIsAnalysing] = useState(false);
-  const [analyses, setAnalyses] = useState<StepAnalysis[]>([]);
   const [textInput, setTextInput] = useState("");
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  // ── Session summary ──
+  const [sessionPhase, setSessionPhase] = useState<"active" | "summary">("active");
+  const [sessionRating, setSessionRating] = useState(0);
+  const [summaryText, setSummaryText] = useState("");
+  const [summaryLoading, setSummaryLoading] = useState(false);
+
+  // ── Break timer ──
+  const [breakTimer, setBreakTimer] = useState<{ stepIndex: number; remaining: number } | null>(null);
+  const breakIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const scrollRef = useRef<ScrollView>(null);
-
-  // ── Step countdown timer ──
-  type StepTimer = {
-    stepIndex: number;
-    phase: "training" | "break" | "done";
-    remaining: number;
-    paused: boolean;
-  };
-  const [stepTimer, setStepTimer] = useState<StepTimer | null>(null);
-  const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
   const isTrickMode = !!trickName;
   const hasNativeSpeech = !!ExpoSpeechRecognitionModule;
 
+  // ── Speech recognition events ──
+
   useSpeechRecognitionEvent("result", (event: any) => {
     const text = event.results[0]?.transcript ?? "";
-    if (text && activePromptIndex !== null) {
+    if (text) {
+      setCurrentTranscript(text);
       setIsListening(false);
-      analyseWithAI(text, activePromptIndex);
     }
   });
   useSpeechRecognitionEvent("error", () => setIsListening(false));
@@ -104,16 +124,8 @@ export default function SessionScreen() {
     if (isListening) {
       Animated.loop(
         Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.25,
-            duration: 600,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 600,
-            useNativeDriver: true,
-          }),
+          Animated.timing(pulseAnim, { toValue: 1.25, duration: 600, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
         ]),
       ).start();
     } else {
@@ -121,105 +133,35 @@ export default function SessionScreen() {
     }
   }, [isListening]);
 
-  // ── Step timer ──
+  // ── Break timer tick ──
 
-  // Cleanup interval on unmount
   useEffect(() => {
     return () => {
-      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+      if (breakIntervalRef.current) clearInterval(breakIntervalRef.current);
     };
   }, []);
 
-  const tickTimer = () => {
-    setStepTimer((t) => {
-      if (!t || t.paused || t.phase === "done") return t;
-      if (t.remaining > 1) return { ...t, remaining: t.remaining - 1 };
-
-      // remaining is about to hit 0 → transition
-      const step = dayData?.steps[t.stepIndex];
-      if (t.phase === "training" && step && step.break_seconds > 0) {
-        return { ...t, phase: "break", remaining: step.break_seconds };
-      }
-
-      // Done — clear interval and auto-complete the step
-      if (timerIntervalRef.current) {
-        clearInterval(timerIntervalRef.current);
-        timerIntervalRef.current = null;
-      }
-      // Defer to next tick so we don't update other state inside this setter
-      setTimeout(() => {
-        setCompletedSteps((current) => {
-          if (current.includes(t.stepIndex)) return current;
-          // Trigger voice prompt UI if applicable (mirror toggleStep behaviour)
-          if (step?.voice_prompt) {
-            setActivePromptIndex(t.stepIndex);
-            setTextInput("");
+  const startBreakTimer = (stepIndex: number, seconds: number) => {
+    if (seconds <= 0) return;
+    if (breakIntervalRef.current) clearInterval(breakIntervalRef.current);
+    setBreakTimer({ stepIndex, remaining: seconds });
+    breakIntervalRef.current = setInterval(() => {
+      setBreakTimer((t) => {
+        if (!t || t.remaining <= 1) {
+          if (breakIntervalRef.current) clearInterval(breakIntervalRef.current);
+          breakIntervalRef.current = null;
+          // Auto-expand next step when break finishes
+          if (dayData) {
+            const nextIndex = stepIndex + 1;
+            if (nextIndex < dayData.steps.length) {
+              setExpandedStep(nextIndex);
+            }
           }
-          return [...current, t.stepIndex];
-        });
-      }, 0);
-      return { ...t, phase: "done", remaining: 0 };
-    });
-  };
-
-  const startInterval = () => {
-    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-    timerIntervalRef.current = setInterval(tickTimer, 1000);
-  };
-
-  const startStepTimer = (stepIndex: number) => {
-    const step = dayData?.steps[stepIndex];
-    if (!step || !step.duration_seconds) return;
-    setStepTimer({
-      stepIndex,
-      phase: "training",
-      remaining: step.duration_seconds,
-      paused: false,
-    });
-    startInterval();
-  };
-
-  const togglePauseTimer = () => {
-    setStepTimer((t) => {
-      if (!t || t.phase === "done") return t;
-      const nextPaused = !t.paused;
-      if (nextPaused) {
-        // Pausing — kill interval
-        if (timerIntervalRef.current) {
-          clearInterval(timerIntervalRef.current);
-          timerIntervalRef.current = null;
+          return null;
         }
-      } else {
-        // Resuming — restart interval
-        startInterval();
-      }
-      return { ...t, paused: nextPaused };
-    });
-  };
-
-  const resetStepTimer = () => {
-    setStepTimer((t) => {
-      if (!t) return t;
-      const step = dayData?.steps[t.stepIndex];
-      if (!step) return t;
-      // Restart from training phase
-      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-      timerIntervalRef.current = setInterval(tickTimer, 1000);
-      return {
-        stepIndex: t.stepIndex,
-        phase: "training",
-        remaining: step.duration_seconds,
-        paused: false,
-      };
-    });
-  };
-
-  const stopStepTimer = () => {
-    if (timerIntervalRef.current) {
-      clearInterval(timerIntervalRef.current);
-      timerIntervalRef.current = null;
-    }
-    setStepTimer(null);
+        return { ...t, remaining: t.remaining - 1 };
+      });
+    }, 1000);
   };
 
   const formatTime = (seconds: number) => {
@@ -227,6 +169,8 @@ export default function SessionScreen() {
     const s = seconds % 60;
     return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   };
+
+  // ── Load program day ──
 
   useEffect(() => {
     if (isTrickMode) {
@@ -246,6 +190,7 @@ export default function SessionScreen() {
         })),
       });
       setLoading(false);
+      setExpandedStep(0);
       return;
     }
     loadDay();
@@ -265,6 +210,7 @@ export default function SessionScreen() {
         (a, b) => Math.abs(a.day - dayNumber) - Math.abs(b.day - dayNumber),
       );
       setDayData(found ?? sorted[0] ?? null);
+      setExpandedStep(0);
     } catch (err) {
       console.error(err);
     } finally {
@@ -272,18 +218,18 @@ export default function SessionScreen() {
     }
   };
 
-  const startListening = async (stepIndex: number) => {
+  // ── Voice input ──
+
+  const startListening = async () => {
     if (!hasNativeSpeech) return;
     try {
-      const result =
-        await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+      const result = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
       if (!result.granted) {
         alert("Microphone permission required.");
         return;
       }
-      setActivePromptIndex(stepIndex);
+      setCurrentTranscript("");
       setIsListening(true);
-      setTextInput("");
       ExpoSpeechRecognitionModule.start({
         lang: "en-US",
         continuous: true,
@@ -299,77 +245,136 @@ export default function SessionScreen() {
     setIsListening(false);
   };
 
-  const analyseWithAI = async (transcript: string, stepIndex: number) => {
-    if (!dayData || !transcript.trim()) return;
-    setIsAnalysing(true);
-    const step = dayData.steps[stepIndex];
+  // ── Step completion ──
+
+  const completeStep = (index: number) => {
+    if (completedSteps.includes(index)) return;
+    setCompletedSteps((prev) => [...prev, index]);
+
+    const step = dayData?.steps[index];
+    if (step?.voice_prompt) {
+      // Show feedback card
+      setActivePromptIndex(index);
+      setCurrentTranscript("");
+      setTextInput("");
+    } else {
+      // No feedback needed — start break + move on
+      finishStepFlow(index);
+    }
+  };
+
+  const saveObservation = (stepIndex: number) => {
+    if (!currentTranscript.trim()) return;
+    setObservations((prev) => [
+      ...prev.filter((o) => o.stepIndex !== stepIndex),
+      { stepIndex, transcript: currentTranscript.trim() },
+    ]);
+    setActivePromptIndex(null);
+    finishStepFlow(stepIndex);
+  };
+
+  const submitTextObservation = (stepIndex: number) => {
+    if (!textInput.trim()) return;
+    setCurrentTranscript(textInput.trim());
+    setObservations((prev) => [
+      ...prev.filter((o) => o.stepIndex !== stepIndex),
+      { stepIndex, transcript: textInput.trim() },
+    ]);
+    setTextInput("");
+    setActivePromptIndex(null);
+    finishStepFlow(stepIndex);
+  };
+
+  const tryAgain = () => {
+    setCurrentTranscript("");
+    setTextInput("");
+  };
+
+  const skipFeedback = (stepIndex: number) => {
+    setActivePromptIndex(null);
+    setCurrentTranscript("");
+    finishStepFlow(stepIndex);
+  };
+
+  const finishStepFlow = (stepIndex: number) => {
+    const step = dayData?.steps[stepIndex];
+    // Start break timer if applicable
+    if (step && step.break_seconds > 0) {
+      startBreakTimer(stepIndex, step.break_seconds);
+    } else if (dayData) {
+      // No break — auto-expand next step
+      const nextIndex = stepIndex + 1;
+      if (nextIndex < dayData.steps.length) {
+        setExpandedStep(nextIndex);
+      }
+    }
+
+    // Check if all steps are done
+    const allDone = dayData
+      ? completedSteps.length + 1 >= dayData.steps.length
+      : false;
+    if (allDone) {
+      setTimeout(() => setSessionPhase("summary"), 500);
+    }
+  };
+
+  // ── Session summary AI call ──
+
+  const runSummaryAnalysis = async () => {
+    if (!dayData || !dog || observations.length === 0) return;
+    setSummaryLoading(true);
     try {
+      const obsLines = dayData.steps.map((step, i) => {
+        const obs = observations.find((o) => o.stepIndex === i);
+        return `Step ${step.number} (${step.instruction}): ${obs ? `"${obs.transcript}"` : "(no observation)"}`;
+      }).join("\n");
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not signed in");
+
       const { data, error } = await supabase.functions.invoke("claude-chat", {
         headers: { Authorization: `Bearer ${session.access_token}` },
         body: {
           model: "claude-haiku-4-5-20251001",
-          max_tokens: 150,
-          system: `You are Pawlo — the friendly dog teacher mascot at the heart of the Pawlo app. You're warm, encouraging, and a little playful, like the most patient dog trainer the user has ever met.
-Dog: ${dog?.name ?? "the dog"}, ${dog?.breed ?? "unknown breed"}, Level ${dog?.level ?? 1}.
+          max_tokens: 300,
+          system: `You are Pawlo — the friendly dog teacher mascot. Warm, encouraging, and practical.
+Dog: ${dog.name}, ${dog.breed ?? "unknown breed"}, Level ${dog.level ?? 1}.
 Program: ${programTitle} · Day ${dayData.day} — ${dayData.title}.
-Step ${step.number}: ${step.instruction}
-Question: ${step.voice_prompt}
-Analyse in 2 short sentences: what the behaviour indicates, and one actionable tip. Be warm and jargon-free. Use the dog's name.`,
-          messages: [{ role: "user", content: transcript }],
+
+The user just completed all ${dayData.steps.length} steps. Here are their observations:
+${obsLines}
+
+Give a warm 3-5 sentence analysis covering:
+1. What went well (be specific, reference their observations)
+2. Any patterns you notice
+3. One actionable tip for next time
+Use the dog's name. Be concise and jargon-free.`,
+          messages: [{ role: "user", content: "Please analyse my session." }],
         },
       });
-      if (error) {
-        console.error("[claude-chat] invoke error:", error);
-        throw error;
-      }
-      const feedback =
-        data?.content?.[0]?.text ?? "Great observation — keep going!";
-      setAnalyses((prev) => [
-        ...prev.filter((a) => a.stepIndex !== stepIndex),
-        { stepIndex, transcript, feedback },
-      ]);
-      setTextInput("");
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
+
+      if (error) throw error;
+      setSummaryText(data?.content?.[0]?.text ?? "Great session — keep it up!");
     } catch {
-      setAnalyses((prev) => [
-        ...prev.filter((a) => a.stepIndex !== stepIndex),
-        {
-          stepIndex,
-          transcript,
-          feedback: "Couldn't analyse right now — great job observing!",
-        },
-      ]);
+      setSummaryText("Couldn't analyse right now — but great job completing the session! Keep it up.");
     } finally {
-      setIsAnalysing(false);
-      setActivePromptIndex(null);
+      setSummaryLoading(false);
     }
   };
 
-  const toggleStep = (index: number) => {
-    const isCompleting = !completedSteps.includes(index);
-    setCompletedSteps((prev) =>
-      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index],
-    );
-    if (isCompleting && dayData?.steps[index]?.voice_prompt) {
-      setTimeout(() => {
-        setActivePromptIndex(index);
-        setTextInput("");
-      }, 300);
-    } else {
-      setActivePromptIndex(null);
+  useEffect(() => {
+    if (sessionPhase === "summary" && observations.length > 0 && !summaryText) {
+      runSummaryAnalysis();
     }
-  };
+  }, [sessionPhase]);
+
+  // ── Handle done (save everything) ──
 
   const handleDone = async () => {
     if (!dog || saving) return;
     setSaving(true);
     try {
-      // Cache initial level so we can detect level-up after ALL XP additions
-      // (session XP + daily mission XP + badge XP) are applied.
       const initialLevel = dog.level;
-
       const xpEarned = isTrickMode
         ? trickXp
         : Math.round(50 + (dayData?.steps.length ?? 5) * 10);
@@ -406,7 +411,9 @@ Analyse in 2 short sentences: what the behaviour indicates, and one actionable t
       await supabase.from("xp_events").insert({
         dog_id: dog.id,
         amount: xpEarned,
-        reason: isTrickMode ? `${trickName} trick` : `${programTitle} Day ${dayNumber}`,
+        reason: isTrickMode
+          ? `${trickName} trick`
+          : `${programTitle} Day ${dayNumber}`,
       });
 
       if (!isTrickMode) {
@@ -414,6 +421,9 @@ Analyse in 2 short sentences: what the behaviour indicates, and one actionable t
           dog_id: dog.id,
           day_number: dayNumber,
           program_slug: programSlug,
+          session_rating: sessionRating > 0 ? sessionRating : null,
+          ai_summary: summaryText || null,
+          observations: observations.length > 0 ? observations : null,
         });
       }
 
@@ -423,7 +433,6 @@ Analyse in 2 short sentences: what the behaviour indicates, and one actionable t
         await syncCompletedTrick(dog.id, trickId);
       }
 
-      // Auto-complete daily missions
       for (const m of dailyMissions) {
         if (completedDailyIds.includes(m.id)) continue;
         if (m.type === "sa_session" && !isTrickMode) {
@@ -434,22 +443,16 @@ Analyse in 2 short sentences: what the behaviour indicates, and one actionable t
         }
       }
 
-      // Check and award badges
       await loadBadges(dog.id);
       const newBadges = await checkAndAwardBadges(dog.id);
-
       await sendSessionCompleteNotification(dog.name, xpEarned, newStreak);
 
-      // Read FINAL dog state after all XP additions (session + missions + badges)
-      // and decide level-up based on that final level vs the initial level we
-      // cached at the top of handleDone.
       const finalDog = useStore.getState().dog;
       const finalLevel = finalDog?.level ?? newLevel;
       const finalXP = finalDog?.total_xp ?? newXP;
       const leveledUp = finalLevel > initialLevel;
 
       if (newBadges.length > 0) {
-        // Navigate with badge info — replace so session is removed from stack
         const badgeNames = newBadges.map((b) => `${b.emoji} ${b.name}`).join(", ");
         const badgeXP = newBadges.reduce((s, b) => s + b.xp_reward, 0);
         router.replace(
@@ -471,16 +474,18 @@ Analyse in 2 short sentences: what the behaviour indicates, and one actionable t
     }
   };
 
+  // ── Render helpers ──
+
   if (loading)
     return (
-      <View style={styles.loadingContainer}>
+      <View style={styles.centered}>
         <ActivityIndicator size="large" color={Palette.pawGold} />
       </View>
     );
 
   if (!dayData)
     return (
-      <View style={styles.loadingContainer}>
+      <View style={styles.centered}>
         <Text style={{ color: C.text }}>Session not found.</Text>
       </View>
     );
@@ -489,27 +494,101 @@ Analyse in 2 short sentences: what the behaviour indicates, and one actionable t
   const progress = totalSteps > 0 ? completedSteps.length / totalSteps : 0;
   const xpEarned = isTrickMode ? trickXp : Math.round(50 + totalSteps * 10);
 
+  // ── Summary phase ──
+
+  if (sessionPhase === "summary") {
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" />
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.summaryScroll}>
+          <Text style={styles.summaryEmoji}>🎉</Text>
+          <Text style={styles.summaryTitle}>Session complete!</Text>
+          <Text style={styles.summarySubtitle}>
+            {dayData.title} {!isTrickMode ? `· Day ${dayData.day}` : ""}
+          </Text>
+
+          <View style={styles.xpEarnedCard}>
+            <Text style={styles.xpEarnedText}>⭐ +{xpEarned} XP earned</Text>
+          </View>
+
+          {/* Star rating */}
+          <Text style={styles.ratingLabel}>How did this session go?</Text>
+          <View style={styles.starsRow}>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <TouchableOpacity
+                key={star}
+                onPress={() => setSessionRating(star)}
+                style={styles.starBtn}
+              >
+                <Text style={[styles.starText, sessionRating >= star && styles.starFilled]}>
+                  {sessionRating >= star ? "★" : "☆"}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* AI analysis */}
+          {observations.length > 0 && (
+            <View style={styles.analysisCard}>
+              <View style={styles.analysisHeader}>
+                <Text style={styles.analysisIcon}>🐾</Text>
+                <Text style={styles.analysisTitle}>Pawlo's analysis</Text>
+              </View>
+              {summaryLoading ? (
+                <View style={styles.analysisLoading}>
+                  <ActivityIndicator size="small" color={Palette.levelPurple} />
+                  <Text style={styles.analysisLoadingText}>
+                    Pawlo is reviewing your session…
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.analysisText}>{summaryText}</Text>
+              )}
+            </View>
+          )}
+
+          {observations.length === 0 && (
+            <Text style={styles.noObsText}>
+              No observations recorded this session. Try adding feedback next time — Pawlo will give you a personalised analysis!
+            </Text>
+          )}
+
+          {/* Done button */}
+          <TouchableOpacity
+            style={[styles.doneBtn, (saving || summaryLoading) && styles.doneBtnDisabled]}
+            onPress={handleDone}
+            disabled={saving || summaryLoading}
+          >
+            {saving ? (
+              <ActivityIndicator color={Palette.questNight} />
+            ) : (
+              <Text style={styles.doneBtnText}>Done — back to dashboard</Text>
+            )}
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // ── Active phase (step list) ──
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
+      <SoundPanel />
       <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false}>
+        {/* Top bar */}
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => router.back()}>
             <Text style={styles.backText}>← Back</Text>
           </TouchableOpacity>
           <View style={styles.progressBarWrap}>
-            <View
-              style={[
-                styles.progressBarFill,
-                { width: `${progress * 100}%` as any },
-              ]}
-            />
+            <View style={[styles.progressBarFill, { width: `${progress * 100}%` as any }]} />
           </View>
-          <Text style={styles.stepCount}>
-            {completedSteps.length}/{totalSteps}
-          </Text>
+          <Text style={styles.stepCount}>{completedSteps.length}/{totalSteps}</Text>
         </View>
 
+        {/* Hero */}
         <View style={styles.hero}>
           <Text style={styles.heroEmoji}>{isTrickMode ? "🐕" : "🐾"}</Text>
           <Text style={styles.heroTitle}>{dayData.title}</Text>
@@ -522,152 +601,106 @@ Analyse in 2 short sentences: what the behaviour indicates, and one actionable t
         </View>
 
         <View style={styles.xpBadge}>
-          <Text style={styles.xpBadgeText}>
-            ⭐ Complete to earn +{xpEarned} XP
-          </Text>
+          <Text style={styles.xpBadgeText}>⭐ Complete to earn +{xpEarned} XP</Text>
         </View>
 
+        {/* Steps */}
         <Text style={styles.stepsTitle}>Step by step</Text>
         {dayData.steps.map((step, index) => {
           const done = completedSteps.includes(index);
-          const analysis = analyses.find((a) => a.stepIndex === index);
-          const isActive = activePromptIndex === index;
+          const isExpanded = expandedStep === index;
+          const isAwaitingFeedback = activePromptIndex === index;
+          const obs = observations.find((o) => o.stepIndex === index);
+          const isBreaking = breakTimer?.stepIndex === index;
 
           return (
             <View key={index}>
               <TouchableOpacity
-                style={[styles.stepItem, done && styles.stepDone]}
-                onPress={() => toggleStep(index)}
+                style={[styles.stepItem, done && styles.stepDone, isExpanded && styles.stepExpanded]}
+                onPress={() => {
+                  if (!done) setExpandedStep(isExpanded ? null : index);
+                }}
+                activeOpacity={done ? 1 : 0.7}
               >
+                {/* Step number / check */}
                 <View style={[styles.stepNum, done && styles.stepNumDone]}>
-                  <Text
-                    style={[styles.stepNumText, done && styles.stepNumTextDone]}
-                  >
+                  <Text style={[styles.stepNumText, done && styles.stepNumTextDone]}>
                     {done ? "✓" : step.number}
                   </Text>
                 </View>
+
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.stepText, done && styles.stepTextDone]}>
                     {step.instruction}
                   </Text>
-                  {step.duration_seconds > 0 && stepTimer?.stepIndex !== index && (
-                    <View style={styles.stepTimerRow}>
-                      <Text style={styles.stepMeta}>
-                        ⏱ {step.duration_seconds}s
-                        {step.break_seconds > 0
-                          ? `  ·  🔄 ${step.break_seconds}s break`
-                          : ""}
-                      </Text>
-                      {!done && (
-                        <TouchableOpacity
-                          style={styles.startTimerBtn}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            startStepTimer(index);
-                          }}
-                        >
-                          <Text style={styles.startTimerBtnText}>▶ Start</Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  )}
 
-                  {/* Active timer for this step */}
-                  {stepTimer?.stepIndex === index && (
-                    <View
-                      style={[
-                        styles.timerCard,
-                        stepTimer.phase === "break" && styles.timerCardBreak,
-                        stepTimer.phase === "done" && styles.timerCardDone,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.timerPhaseLabel,
-                          stepTimer.phase === "break" && { color: Palette.streakGreen },
-                          stepTimer.phase === "done" && { color: Palette.pawGold },
-                        ]}
-                      >
-                        {stepTimer.phase === "training"
-                          ? "TRAINING"
-                          : stepTimer.phase === "break"
-                            ? "BREAK"
-                            : "DONE"}
-                      </Text>
-                      <Text style={styles.timerCountdown}>
-                        {formatTime(stepTimer.remaining)}
-                      </Text>
-                      {stepTimer.phase !== "done" && (
-                        <View style={styles.timerControls}>
-                          <TouchableOpacity
-                            style={styles.timerBtn}
-                            onPress={(e) => {
-                              e.stopPropagation();
-                              togglePauseTimer();
-                            }}
-                          >
-                            <Text style={styles.timerBtnText}>
-                              {stepTimer.paused ? "▶ Resume" : "⏸ Pause"}
-                            </Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={styles.timerBtn}
-                            onPress={(e) => {
-                              e.stopPropagation();
-                              resetStepTimer();
-                            }}
-                          >
-                            <Text style={styles.timerBtnText}>↻ Reset</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={[styles.timerBtn, styles.timerBtnGhost]}
-                            onPress={(e) => {
-                              e.stopPropagation();
-                              stopStepTimer();
-                            }}
-                          >
-                            <Text style={styles.timerBtnGhostText}>✕</Text>
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                    </View>
-                  )}
-
-                  {step.voice_prompt && !done && (
-                    <Text style={styles.stepPromptHint}>
-                      🎙️ Pawlo will ask after this step
+                  {/* Observation preview (collapsed, completed) */}
+                  {done && obs && !isExpanded && (
+                    <Text style={styles.obsPreview} numberOfLines={1}>
+                      🎙 "{obs.transcript}"
                     </Text>
+                  )}
+
+                  {/* Duration hint (expanded, not yet done) */}
+                  {isExpanded && !done && step.duration_seconds > 0 && (
+                    <Text style={styles.durationHint}>
+                      ⏱ Suggested: {step.duration_seconds}s
+                      {step.break_seconds > 0 ? `  ·  🔄 ${step.break_seconds}s break after` : ""}
+                    </Text>
+                  )}
+
+                  {/* Complete button (expanded, not yet done) */}
+                  {isExpanded && !done && (
+                    <TouchableOpacity
+                      style={styles.completeBtn}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        completeStep(index);
+                      }}
+                    >
+                      <Text style={styles.completeBtnText}>✓ Step completed</Text>
+                    </TouchableOpacity>
                   )}
                 </View>
               </TouchableOpacity>
 
-              {isActive && step.voice_prompt && (
-                <View style={styles.voiceCard}>
-                  <Text style={styles.voiceQuestion}>{step.voice_prompt}</Text>
-                  {hasNativeSpeech ? (
+              {/* Feedback card (after step completion, awaiting voice/text input) */}
+              {isAwaitingFeedback && step.voice_prompt && (
+                <View style={styles.feedbackCard}>
+                  <Text style={styles.feedbackQuestion}>{step.voice_prompt}</Text>
+
+                  {/* Transcript display + Try again */}
+                  {currentTranscript ? (
+                    <View style={styles.transcriptBox}>
+                      <Text style={styles.transcriptLabel}>Your observation:</Text>
+                      <Text style={styles.transcriptText}>"{currentTranscript}"</Text>
+                      <View style={styles.transcriptActions}>
+                        <TouchableOpacity style={styles.tryAgainBtn} onPress={tryAgain}>
+                          <Text style={styles.tryAgainText}>↻ Try again</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.saveObsBtn}
+                          onPress={() => saveObservation(index)}
+                        >
+                          <Text style={styles.saveObsText}>Save & continue →</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : hasNativeSpeech ? (
+                    /* Voice input */
                     <TouchableOpacity
-                      style={[
-                        styles.micBtn,
-                        isListening && styles.micBtnActive,
-                      ]}
-                      onPress={
-                        isListening
-                          ? stopListening
-                          : () => startListening(index)
-                      }
+                      style={[styles.micBtn, isListening && styles.micBtnActive]}
+                      onPress={isListening ? stopListening : startListening}
                     >
-                      <Animated.View
-                        style={{ transform: [{ scale: pulseAnim }] }}
-                      >
-                        <Text style={styles.micIcon}>
-                          {isListening ? "⏹" : "🎤"}
-                        </Text>
+                      <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+                        <Text style={styles.micIcon}>{isListening ? "⏹" : "🎤"}</Text>
                       </Animated.View>
                       <Text style={styles.micLabel}>
                         {isListening ? "Tap to stop" : "Tap to record"}
                       </Text>
                     </TouchableOpacity>
                   ) : (
+                    /* Text fallback */
                     <View style={styles.textInputWrap}>
                       <TextInput
                         style={styles.observationInput}
@@ -679,338 +712,270 @@ Analyse in 2 short sentences: what the behaviour indicates, and one actionable t
                         maxLength={300}
                       />
                       <TouchableOpacity
-                        style={[
-                          styles.sendObsBtn,
-                          (!textInput.trim() || isAnalysing) &&
-                            styles.sendObsBtnDisabled,
-                        ]}
-                        onPress={() => analyseWithAI(textInput, index)}
-                        disabled={!textInput.trim() || isAnalysing}
+                        style={[styles.sendBtn, !textInput.trim() && styles.sendBtnDisabled]}
+                        onPress={() => submitTextObservation(index)}
+                        disabled={!textInput.trim()}
                       >
-                        <Text
-                          style={[
-                            styles.sendObsText,
-                            (!textInput.trim() || isAnalysing) &&
-                              styles.sendObsTextDisabled,
-                          ]}
-                        >
-                          {isAnalysing ? "Analysing…" : "Get AI feedback →"}
+                        <Text style={[styles.sendBtnText, !textInput.trim() && styles.sendBtnTextDisabled]}>
+                          Send →
                         </Text>
                       </TouchableOpacity>
                     </View>
                   )}
-                  {isAnalysing && (
-                    <View style={styles.analysingRow}>
-                      <ActivityIndicator
-                        size="small"
-                        color={Palette.levelPurple}
-                      />
-                      <Text style={styles.analysingText}>
-                        Pawlo is thinking…
-                      </Text>
-                    </View>
-                  )}
+
                   <TouchableOpacity
-                    style={styles.skipPromptBtn}
-                    onPress={() => setActivePromptIndex(null)}
+                    style={styles.skipBtn}
+                    onPress={() => skipFeedback(index)}
                   >
-                    <Text style={styles.skipPromptText}>Skip for now</Text>
+                    <Text style={styles.skipText}>Skip for now</Text>
                   </TouchableOpacity>
                 </View>
               )}
 
-              {analysis && (
-                <View style={styles.feedbackCard}>
-                  <View style={styles.feedbackHeader}>
-                    <Text style={styles.feedbackIcon}>🤖</Text>
-                    <Text style={styles.feedbackTitle}>Pawlo says</Text>
-                  </View>
-                  <Text style={styles.feedbackTranscript}>
-                    "{analysis.transcript}"
+              {/* Break timer (auto-started after step completion) */}
+              {isBreaking && breakTimer && (
+                <View style={styles.breakBanner}>
+                  <Text style={styles.breakEmoji}>☕</Text>
+                  <Text style={styles.breakText}>
+                    Break · {formatTime(breakTimer.remaining)}
                   </Text>
-                  <Text style={styles.feedbackText}>{analysis.feedback}</Text>
                 </View>
               )}
             </View>
           );
         })}
 
-        <View style={styles.actions}>
+        {/* Bottom action — only if all steps done but phase is still active */}
+        {completedSteps.length === totalSteps && sessionPhase === "active" && (
           <TouchableOpacity
-            style={[
-              styles.btnSuccess,
-              (completedSteps.length < totalSteps || saving) &&
-                styles.btnDisabled,
-            ]}
-            onPress={handleDone}
-            disabled={completedSteps.length < totalSteps || saving}
+            style={styles.finishBtn}
+            onPress={() => setSessionPhase("summary")}
           >
-            {saving ? (
-              <ActivityIndicator color={Palette.questNight} />
-            ) : (
-              <Text style={styles.btnSuccessText}>
-                {completedSteps.length === totalSteps
-                  ? `🎉 Complete session! +${xpEarned} XP`
-                  : `Complete all ${totalSteps} steps to finish`}
-              </Text>
-            )}
+            <Text style={styles.finishBtnText}>🎉 Finish session → Summary</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.btnSkip}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.btnSkipText}>Skip for now</Text>
-          </TouchableOpacity>
-        </View>
+        )}
 
-        <TouchableOpacity
-          style={styles.aiTip}
-          onPress={() => router.push("/advisor" as any)}
-        >
-          <Text style={styles.aiTipIcon}>🤖</Text>
-          <Text style={styles.aiTipText}>
-            More questions? Ask the AI Advisor →
-          </Text>
-        </TouchableOpacity>
-
-        <View style={{ height: 100 }} />
+        <View style={{ height: 120 }} />
       </ScrollView>
-
-      {/* Floating clicker + whistle for hands-free training */}
-      <SoundPanel />
     </View>
   );
 }
 
+// ── Styles ──────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
-  loadingContainer: {
+  container: { flex: 1, backgroundColor: C.background },
+  centered: {
     flex: 1,
     backgroundColor: C.background,
     alignItems: "center",
     justifyContent: "center",
   },
-  container: {
-    flex: 1,
-    backgroundColor: C.background,
-    paddingHorizontal: Spacing.xl,
-    paddingTop: 60,
-  },
 
+  // ── Top bar ──
   topBar: {
     flexDirection: "row",
     alignItems: "center",
+    paddingHorizontal: Spacing.xl,
+    paddingTop: 60,
+    paddingBottom: 12,
     gap: 12,
-    marginBottom: 24,
   },
   backText: { color: C.textSecondary, fontSize: 14 },
   progressBarWrap: {
     flex: 1,
     height: 6,
-    backgroundColor: C.border,
+    backgroundColor: C.surface,
     borderRadius: 3,
     overflow: "hidden",
   },
   progressBarFill: {
-    height: "100%",
+    height: 6,
     backgroundColor: Palette.pawGold,
     borderRadius: 3,
   },
-  stepCount: { color: C.textSecondary, fontSize: 12 },
+  stepCount: { color: C.textSecondary, fontSize: 12, fontWeight: "600" },
 
-  hero: {
-    backgroundColor: C.surface,
-    borderWidth: 1,
-    borderColor: C.border,
-    borderRadius: Radius.xl,
-    padding: 24,
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  heroEmoji: { fontSize: 56, marginBottom: 12 },
+  // ── Hero ──
+  hero: { alignItems: "center", paddingHorizontal: Spacing.xl, marginBottom: 16 },
+  heroEmoji: { fontSize: 40, marginBottom: 8 },
   heroTitle: {
     color: C.text,
     fontSize: 22,
-    fontWeight: "700",
+    fontWeight: "800",
     textAlign: "center",
     marginBottom: 8,
   },
   dayBadge: {
-    backgroundColor: "rgba(250,199,117,0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(250,199,117,0.3)",
+    backgroundColor: "rgba(127,119,221,0.2)",
     borderRadius: Radius.full,
     paddingHorizontal: 12,
     paddingVertical: 4,
     marginBottom: 8,
   },
-  dayBadgeText: { color: C.xp, fontSize: 12, fontWeight: "600" },
+  dayBadgeText: { color: Palette.levelPurple, fontSize: 12, fontWeight: "700" },
   heroGoal: {
     color: C.textSecondary,
-    fontSize: 13,
+    fontSize: 14,
     textAlign: "center",
     lineHeight: 20,
   },
-
   xpBadge: {
-    backgroundColor: "rgba(250,199,117,0.1)",
-    borderWidth: 1,
-    borderColor: "rgba(250,199,117,0.2)",
-    borderRadius: Radius.md,
-    padding: 12,
-    alignItems: "center",
-    marginBottom: 12,
+    alignSelf: "center",
+    backgroundColor: "rgba(250,199,117,0.15)",
+    borderRadius: Radius.full,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginBottom: 24,
   },
-  xpBadgeText: { color: C.xp, fontSize: 13, fontWeight: "600" },
+  xpBadgeText: { color: Palette.pawGold, fontSize: 13, fontWeight: "700" },
 
+  // ── Steps ──
   stepsTitle: {
     color: C.text,
     fontSize: 16,
     fontWeight: "700",
+    paddingHorizontal: Spacing.xl,
     marginBottom: 12,
   },
   stepItem: {
     flexDirection: "row",
-    gap: 14,
-    alignItems: "flex-start",
+    marginHorizontal: Spacing.xl,
+    marginBottom: 10,
+    padding: 16,
     backgroundColor: C.surface,
     borderWidth: 1,
     borderColor: C.border,
     borderRadius: Radius.lg,
-    padding: 14,
-    marginBottom: 8,
+    gap: 14,
+  },
+  stepExpanded: {
+    borderColor: Palette.levelPurple,
+    backgroundColor: "rgba(127,119,221,0.08)",
   },
   stepDone: {
+    borderColor: "rgba(29,158,117,0.3)",
     backgroundColor: "rgba(29,158,117,0.06)",
-    borderColor: "rgba(29,158,117,0.2)",
   },
   stepNum: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "rgba(250,199,117,0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(250,199,117,0.3)",
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.08)",
     alignItems: "center",
     justifyContent: "center",
-    flexShrink: 0,
-    marginTop: 1,
   },
-  stepNumDone: {
-    backgroundColor: "rgba(29,158,117,0.15)",
-    borderColor: "rgba(29,158,117,0.3)",
-  },
-  stepNumText: { color: C.xp, fontSize: 12, fontWeight: "700" },
-  stepNumTextDone: { color: C.success },
-  stepText: { color: C.text, fontSize: 14, lineHeight: 22 },
+  stepNumDone: { backgroundColor: Palette.streakGreen },
+  stepNumText: { color: C.text, fontSize: 14, fontWeight: "700" },
+  stepNumTextDone: { color: "#fff" },
+  stepText: { color: C.text, fontSize: 14, lineHeight: 20 },
   stepTextDone: { color: C.textSecondary },
-  stepMeta: { color: C.textMuted, fontSize: 11, marginTop: 4 },
-  stepPromptHint: { color: Palette.levelPurple, fontSize: 11, marginTop: 4 },
-  stepTimerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 4,
+  obsPreview: {
+    color: C.textMuted,
+    fontSize: 12,
+    marginTop: 6,
+    fontStyle: "italic",
   },
-  startTimerBtn: {
-    backgroundColor: "rgba(250,199,117,0.18)",
-    borderWidth: 1,
-    borderColor: Palette.pawGold,
-    borderRadius: Radius.full,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+  durationHint: {
+    color: C.textMuted,
+    fontSize: 12,
+    marginTop: 8,
   },
-  startTimerBtnText: {
-    color: Palette.pawGold,
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 0.4,
-  },
-  timerCard: {
-    marginTop: 12,
-    backgroundColor: "rgba(250,199,117,0.1)",
-    borderWidth: 1,
-    borderColor: Palette.pawGold,
-    borderRadius: Radius.lg,
-    padding: 16,
-    alignItems: "center",
-  },
-  timerCardBreak: {
-    backgroundColor: "rgba(29,158,117,0.1)",
-    borderColor: Palette.streakGreen,
-  },
-  timerCardDone: {
-    backgroundColor: "rgba(127,119,221,0.08)",
-    borderColor: Palette.levelPurple,
-  },
-  timerPhaseLabel: {
-    color: Palette.pawGold,
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 1.5,
-    marginBottom: 6,
-  },
-  timerCountdown: {
-    color: C.text,
-    fontSize: 42,
-    fontWeight: "900",
-    letterSpacing: -1,
-    fontVariant: ["tabular-nums"],
-    marginBottom: 12,
-  },
-  timerControls: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  timerBtn: {
-    backgroundColor: "rgba(255,255,255,0.06)",
-    borderWidth: 1,
-    borderColor: C.border,
+  completeBtn: {
+    backgroundColor: Palette.pawGold,
     borderRadius: Radius.md,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    marginTop: 14,
   },
-  timerBtnText: { color: C.text, fontSize: 12, fontWeight: "700" },
-  timerBtnGhost: {
-    paddingHorizontal: 12,
+  completeBtnText: {
+    color: Palette.questNight,
+    fontSize: 14,
+    fontWeight: "700",
   },
-  timerBtnGhostText: { color: C.textSecondary, fontSize: 14, fontWeight: "700" },
 
-  voiceCard: {
-    backgroundColor: "rgba(127,119,221,0.1)",
+  // ── Feedback card ──
+  feedbackCard: {
+    marginHorizontal: Spacing.xl,
+    marginBottom: 10,
+    padding: 16,
+    backgroundColor: "rgba(127,119,221,0.08)",
     borderWidth: 1,
     borderColor: "rgba(127,119,221,0.25)",
     borderRadius: Radius.lg,
-    padding: 16,
-    marginBottom: 8,
-    alignItems: "center",
   },
-  voiceQuestion: {
+  feedbackQuestion: {
     color: C.text,
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "600",
-    textAlign: "center",
-    marginBottom: 16,
-    lineHeight: 22,
+    marginBottom: 14,
   },
+
+  // Voice
   micBtn: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+    borderRadius: Radius.lg,
     backgroundColor: C.surface,
     borderWidth: 1,
     borderColor: C.border,
-    borderRadius: Radius.full,
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 10,
   },
   micBtnActive: {
-    backgroundColor: "rgba(250,199,117,0.15)",
-    borderColor: Palette.pawGold,
+    borderColor: Palette.alertCoral,
+    backgroundColor: "rgba(216,90,48,0.12)",
   },
-  micIcon: { fontSize: 28 },
-  micLabel: { color: C.textSecondary, fontSize: 12 },
+  micIcon: { fontSize: 32, marginBottom: 6 },
+  micLabel: { color: C.textSecondary, fontSize: 13 },
 
-  textInputWrap: { width: "100%", gap: 8, marginBottom: 8 },
+  // Transcript
+  transcriptBox: {
+    backgroundColor: C.surface,
+    borderRadius: Radius.md,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+  transcriptLabel: {
+    color: C.textMuted,
+    fontSize: 11,
+    fontWeight: "600",
+    letterSpacing: 0.5,
+    marginBottom: 6,
+    textTransform: "uppercase",
+  },
+  transcriptText: {
+    color: C.text,
+    fontSize: 14,
+    lineHeight: 20,
+    fontStyle: "italic",
+    marginBottom: 14,
+  },
+  transcriptActions: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  tryAgainBtn: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: Radius.md,
+    paddingVertical: 10,
+    alignItems: "center",
+  },
+  tryAgainText: { color: C.textSecondary, fontSize: 13, fontWeight: "600" },
+  saveObsBtn: {
+    flex: 1,
+    backgroundColor: Palette.streakGreen,
+    borderRadius: Radius.md,
+    paddingVertical: 10,
+    alignItems: "center",
+  },
+  saveObsText: { color: "#fff", fontSize: 13, fontWeight: "700" },
+
+  // Text fallback
+  textInputWrap: { gap: 10 },
   observationInput: {
     backgroundColor: C.surface,
     borderWidth: 1,
@@ -1019,89 +984,140 @@ const styles = StyleSheet.create({
     padding: 12,
     color: C.text,
     fontSize: 14,
-    lineHeight: 20,
-    minHeight: 80,
+    minHeight: 70,
     textAlignVertical: "top",
-    width: "100%",
   },
-  sendObsBtn: {
+  sendBtn: {
     backgroundColor: Palette.pawGold,
     borderRadius: Radius.md,
-    paddingVertical: 12,
+    paddingVertical: 10,
     alignItems: "center",
   },
-  sendObsBtnDisabled: {
-    backgroundColor: "rgba(250,199,117,0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(250,199,117,0.3)",
-  },
-  sendObsText: { color: Palette.questNight, fontSize: 13, fontWeight: "600" },
-  sendObsTextDisabled: { color: "rgba(250,199,117,0.5)" },
+  sendBtnDisabled: { backgroundColor: C.surface },
+  sendBtnText: { color: Palette.questNight, fontSize: 14, fontWeight: "700" },
+  sendBtnTextDisabled: { color: C.textMuted },
 
-  analysingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 8,
-  },
-  analysingText: { color: Palette.levelPurple, fontSize: 12 },
-  skipPromptBtn: { paddingVertical: 6 },
-  skipPromptText: { color: C.textMuted, fontSize: 12 },
+  skipBtn: { alignItems: "center", marginTop: 12, paddingVertical: 6 },
+  skipText: { color: C.textMuted, fontSize: 13 },
 
-  feedbackCard: {
-    backgroundColor: "rgba(29,158,117,0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(29,158,117,0.2)",
-    borderRadius: Radius.lg,
-    padding: 14,
-    marginBottom: 8,
-  },
-  feedbackHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 8,
-  },
-  feedbackIcon: { fontSize: 16 },
-  feedbackTitle: { color: C.success, fontSize: 13, fontWeight: "600" },
-  feedbackTranscript: {
-    color: C.textSecondary,
-    fontSize: 12,
-    fontStyle: "italic",
-    marginBottom: 8,
-    lineHeight: 18,
-  },
-  feedbackText: { color: C.text, fontSize: 13, lineHeight: 20 },
-
-  actions: { gap: 10, marginTop: 8 },
-  btnSuccess: {
-    backgroundColor: Palette.streakGreen,
-    borderRadius: Radius.lg,
-    paddingVertical: 16,
-    alignItems: "center",
-  },
-  btnDisabled: { backgroundColor: C.surface },
-  btnSuccessText: {
-    color: Palette.questNight,
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  btnSkip: {
-    borderWidth: 1,
-    borderColor: C.border,
-    borderRadius: Radius.lg,
-    paddingVertical: 15,
-    alignItems: "center",
-  },
-  btnSkipText: { color: C.textSecondary, fontSize: 15 },
-  aiTip: {
+  // ── Break timer ──
+  breakBanner: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    marginTop: 16,
+    marginHorizontal: Spacing.xl,
+    marginBottom: 10,
     padding: 12,
+    backgroundColor: "rgba(29,158,117,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(29,158,117,0.25)",
+    borderRadius: Radius.lg,
+    gap: 8,
   },
-  aiTipIcon: { fontSize: 16 },
-  aiTipText: { color: C.accent, fontSize: 13 },
+  breakEmoji: { fontSize: 18 },
+  breakText: { color: Palette.streakGreen, fontSize: 14, fontWeight: "700" },
+
+  // ── Finish button ──
+  finishBtn: {
+    marginHorizontal: Spacing.xl,
+    marginTop: 20,
+    backgroundColor: Palette.pawGold,
+    borderRadius: Radius.lg,
+    paddingVertical: 18,
+    alignItems: "center",
+  },
+  finishBtnText: { color: Palette.questNight, fontSize: 16, fontWeight: "800" },
+
+  // ── Summary phase ──
+  summaryScroll: {
+    paddingHorizontal: Spacing.xl,
+    paddingTop: 80,
+    paddingBottom: 60,
+    alignItems: "center",
+  },
+  summaryEmoji: { fontSize: 56, marginBottom: 16 },
+  summaryTitle: {
+    color: C.text,
+    fontSize: 28,
+    fontWeight: "800",
+    textAlign: "center",
+    marginBottom: 6,
+  },
+  summarySubtitle: {
+    color: C.textSecondary,
+    fontSize: 15,
+    textAlign: "center",
+    marginBottom: 24,
+  },
+  xpEarnedCard: {
+    backgroundColor: "rgba(250,199,117,0.15)",
+    borderRadius: Radius.lg,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    marginBottom: 32,
+  },
+  xpEarnedText: { color: Palette.pawGold, fontSize: 18, fontWeight: "800" },
+
+  // Stars
+  ratingLabel: {
+    color: C.text,
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 14,
+    textAlign: "center",
+  },
+  starsRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 32,
+  },
+  starBtn: { padding: 4 },
+  starText: { fontSize: 36, color: C.textMuted },
+  starFilled: { color: Palette.pawGold },
+
+  // Analysis
+  analysisCard: {
+    width: "100%",
+    backgroundColor: C.surface,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: Radius.lg,
+    padding: 18,
+    marginBottom: 32,
+  },
+  analysisHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 14,
+  },
+  analysisIcon: { fontSize: 22 },
+  analysisTitle: { color: C.text, fontSize: 16, fontWeight: "700" },
+  analysisLoading: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 12,
+  },
+  analysisLoadingText: { color: C.textSecondary, fontSize: 14 },
+  analysisText: { color: C.textSecondary, fontSize: 15, lineHeight: 22 },
+  noObsText: {
+    color: C.textMuted,
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 32,
+    paddingHorizontal: 20,
+  },
+
+  // Done button
+  doneBtn: {
+    width: "100%",
+    backgroundColor: Palette.pawGold,
+    borderRadius: Radius.lg,
+    paddingVertical: 18,
+    alignItems: "center",
+  },
+  doneBtnDisabled: { opacity: 0.5 },
+  doneBtnText: { color: Palette.questNight, fontSize: 16, fontWeight: "800" },
 });
