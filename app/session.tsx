@@ -98,7 +98,7 @@ export default function SessionScreen() {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const listeningRef = useRef(false);
   const autoStopTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const transcriptRef = useRef("");
+  const accumulatedRef = useRef(""); // finalized segments accumulated here
 
   // ── Session summary ──
   const [sessionPhase, setSessionPhase] = useState<"active" | "summary">("active");
@@ -118,9 +118,18 @@ export default function SessionScreen() {
 
   useSpeechRecognitionEvent("result", (event: any) => {
     const text = event.results[0]?.transcript ?? "";
+    const isFinal = event.isFinal ?? event.results[0]?.isFinal ?? false;
     if (text) {
-      transcriptRef.current = text;
-      setCurrentTranscript(text);
+      if (isFinal) {
+        // Segment finalized (user paused) — append to accumulated
+        const sep = accumulatedRef.current ? " " : "";
+        accumulatedRef.current = accumulatedRef.current + sep + text;
+        setCurrentTranscript(accumulatedRef.current);
+      } else {
+        // Interim result — show accumulated + current segment preview
+        const sep = accumulatedRef.current ? " " : "";
+        setCurrentTranscript(accumulatedRef.current + sep + text);
+      }
     }
   });
 
@@ -254,8 +263,8 @@ export default function SessionScreen() {
       // Stop any existing session first
       try { ExpoSpeechRecognitionModule.stop(); } catch {}
 
-      // Don't clear transcript — accumulate across recordings
-      transcriptRef.current = currentTranscript;
+      // Keep accumulated text for "record more" — new segments append
+      accumulatedRef.current = currentTranscript;
       setIsListening(true);
       listeningRef.current = true;
 
@@ -300,7 +309,7 @@ export default function SessionScreen() {
     if (step?.voice_prompt) {
       setActivePromptIndex(index);
       setCurrentTranscript("");
-      transcriptRef.current = "";
+      accumulatedRef.current = "";
       setTextInput("");
       setFeedbackMode("choose");
     } else {
@@ -314,7 +323,7 @@ export default function SessionScreen() {
     setEditingStepIndex(index);
     setActivePromptIndex(index);
     setCurrentTranscript(obs.transcript);
-    transcriptRef.current = obs.transcript;
+    accumulatedRef.current = obs.transcript;
     setTextInput("");
     setFeedbackMode("choose");
   };
@@ -340,20 +349,20 @@ export default function SessionScreen() {
   const submitTextObservation = () => {
     if (!textInput.trim()) return;
     setCurrentTranscript(textInput.trim());
-    transcriptRef.current = textInput.trim();
+    accumulatedRef.current = textInput.trim();
     setTextInput("");
   };
 
   const tryAgain = () => {
     setCurrentTranscript("");
-    transcriptRef.current = "";
+    accumulatedRef.current = "";
     setTextInput("");
   };
 
   const skipFeedback = (stepIndex: number) => {
     setActivePromptIndex(null);
     setCurrentTranscript("");
-    transcriptRef.current = "";
+    accumulatedRef.current = "";
     setFeedbackMode("choose");
     if (editingStepIndex !== null) {
       setEditingStepIndex(null);
