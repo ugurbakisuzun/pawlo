@@ -11,7 +11,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { getLocales } from "expo-localization";
 import { Colors, Palette, Radius, Spacing } from "../constants/theme";
 import { sendSessionCompleteNotification } from "../lib/notifications";
 import { SoundPanel } from "../components/SoundPanel";
@@ -29,19 +28,6 @@ try {
   ExpoSpeechRecognitionModule = mod.ExpoSpeechRecognitionModule;
   useSpeechRecognitionEvent = mod.useSpeechRecognitionEvent;
 } catch {}
-
-// ── Detect device language for speech recognition ──
-
-function getDeviceLanguage(): string {
-  try {
-    const locales = getLocales();
-    if (locales.length > 0) {
-      const tag = locales[0].languageTag; // e.g. "tr-TR", "en-US"
-      if (tag.startsWith("tr")) return "tr-TR";
-    }
-  } catch {}
-  return "en-US";
-}
 
 // ── Types ───────────────────────────────────────────────────────────────
 
@@ -107,9 +93,12 @@ export default function SessionScreen() {
   const [isListening, setIsListening] = useState(false);
   const [textInput, setTextInput] = useState("");
   const [feedbackMode, setFeedbackMode] = useState<"choose" | "voice" | "text">("choose");
+  const [speechLang, setSpeechLang] = useState<"en-US" | "tr-TR">("en-US");
+  const [editingStepIndex, setEditingStepIndex] = useState<number | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const listeningRef = useRef(false);
   const autoStopTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const transcriptRef = useRef("");
 
   // ── Session summary ──
   const [sessionPhase, setSessionPhase] = useState<"active" | "summary">("active");
@@ -130,8 +119,7 @@ export default function SessionScreen() {
   useSpeechRecognitionEvent("result", (event: any) => {
     const text = event.results[0]?.transcript ?? "";
     if (text) {
-      // In continuous mode, keep updating transcript as user speaks.
-      // Don't auto-stop — let the user tap stop when they're done.
+      transcriptRef.current = text;
       setCurrentTranscript(text);
     }
   });
@@ -252,7 +240,7 @@ export default function SessionScreen() {
     }
   };
 
-  // ── Voice input (with stability fixes) ──
+  // ── Voice input ──
 
   const startListening = async () => {
     if (!hasNativeSpeech || listeningRef.current) return;
@@ -266,15 +254,15 @@ export default function SessionScreen() {
       // Stop any existing session first
       try { ExpoSpeechRecognitionModule.stop(); } catch {}
 
-      setCurrentTranscript("");
+      // Don't clear transcript — accumulate across recordings
+      transcriptRef.current = currentTranscript;
       setIsListening(true);
       listeningRef.current = true;
 
-      const lang = getDeviceLanguage();
       ExpoSpeechRecognitionModule.start({
-        lang,
-        continuous: true, // Keep listening until user taps stop
-        interimResults: true, // Show live transcript while speaking
+        lang: speechLang,
+        continuous: true,
+        interimResults: true,
       });
 
       // Safety auto-stop after 60 seconds
@@ -312,11 +300,23 @@ export default function SessionScreen() {
     if (step?.voice_prompt) {
       setActivePromptIndex(index);
       setCurrentTranscript("");
+      transcriptRef.current = "";
       setTextInput("");
-      setFeedbackMode("choose"); // Reset to choice screen
+      setFeedbackMode("choose");
     } else {
       finishStepFlow(index, newCompleted);
     }
+  };
+
+  const openEditObservation = (index: number) => {
+    const obs = observations.find((o) => o.stepIndex === index);
+    if (!obs) return;
+    setEditingStepIndex(index);
+    setActivePromptIndex(index);
+    setCurrentTranscript(obs.transcript);
+    transcriptRef.current = obs.transcript;
+    setTextInput("");
+    setFeedbackMode("choose");
   };
 
   const saveObservation = (stepIndex: number) => {
@@ -328,24 +328,37 @@ export default function SessionScreen() {
     setObservations(newObs);
     setActivePromptIndex(null);
     setFeedbackMode("choose");
+
+    // If editing existing observation, don't re-trigger finishStepFlow
+    if (editingStepIndex !== null) {
+      setEditingStepIndex(null);
+      return;
+    }
     finishStepFlow(stepIndex, completedSteps);
   };
 
   const submitTextObservation = () => {
     if (!textInput.trim()) return;
     setCurrentTranscript(textInput.trim());
+    transcriptRef.current = textInput.trim();
     setTextInput("");
   };
 
   const tryAgain = () => {
     setCurrentTranscript("");
+    transcriptRef.current = "";
     setTextInput("");
   };
 
   const skipFeedback = (stepIndex: number) => {
     setActivePromptIndex(null);
     setCurrentTranscript("");
+    transcriptRef.current = "";
     setFeedbackMode("choose");
+    if (editingStepIndex !== null) {
+      setEditingStepIndex(null);
+      return;
+    }
     finishStepFlow(stepIndex, completedSteps);
   };
 
@@ -375,7 +388,6 @@ export default function SessionScreen() {
     if (!dayData || !dog || observations.length === 0) return;
     setSummaryLoading(true);
     try {
-      // Build observation lines for ALL steps (including the last one)
       const obsLines = dayData.steps.map((step, i) => {
         const obs = observations.find((o) => o.stepIndex === i);
         return `Step ${step.number} — "${step.instruction}": ${obs ? `User said: "${obs.transcript}"` : "(no observation recorded)"}`;
@@ -421,7 +433,6 @@ Use ${dog.name}'s name. Keep the tone like a supportive coach texting you after 
 
       if (error) throw error;
       const rawText = data?.content?.[0]?.text ?? "Great session — keep it up!";
-      // Strip any accidental markdown that slipped through
       const cleaned = rawText
         .replace(/^#{1,6}\s+/gm, "")
         .replace(/\*\*(.*?)\*\*/g, "$1")
@@ -564,6 +575,25 @@ Use ${dog.name}'s name. Keep the tone like a supportive coach texting you after 
   const progress = totalSteps > 0 ? completedSteps.length / totalSteps : 0;
   const xpEarned = isTrickMode ? trickXp : Math.round(50 + totalSteps * 10);
 
+  // ── Language toggle component ──
+
+  const LangToggle = () => (
+    <View style={styles.langToggle}>
+      <TouchableOpacity
+        style={[styles.langBtn, speechLang === "en-US" && styles.langBtnActive]}
+        onPress={() => setSpeechLang("en-US")}
+      >
+        <Text style={[styles.langText, speechLang === "en-US" && styles.langTextActive]}>EN</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.langBtn, speechLang === "tr-TR" && styles.langBtnActive]}
+        onPress={() => setSpeechLang("tr-TR")}
+      >
+        <Text style={[styles.langText, speechLang === "tr-TR" && styles.langTextActive]}>TR</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   // ── Summary phase ──
 
   if (sessionPhase === "summary") {
@@ -704,11 +734,19 @@ Use ${dog.name}'s name. Keep the tone like a supportive coach texting you after 
                     {step.instruction}
                   </Text>
 
-                  {/* Observation preview (collapsed, completed) */}
-                  {done && obs && !isExpanded && (
-                    <Text style={styles.obsPreview} numberOfLines={1}>
-                      🎙 "{obs.transcript}"
-                    </Text>
+                  {/* Observation preview (collapsed, completed) — tap to edit */}
+                  {done && obs && !isAwaitingFeedback && (
+                    <TouchableOpacity
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        openEditObservation(index);
+                      }}
+                    >
+                      <Text style={styles.obsPreview} numberOfLines={2}>
+                        🎙 "{obs.transcript}"
+                      </Text>
+                      <Text style={styles.obsEditHint}>Tap to edit</Text>
+                    </TouchableOpacity>
                   )}
 
                   {/* Duration hint (expanded, not yet done) */}
@@ -739,46 +777,67 @@ Use ${dog.name}'s name. Keep the tone like a supportive coach texting you after 
                 <View style={styles.feedbackCard}>
                   <Text style={styles.feedbackQuestion}>{step.voice_prompt}</Text>
 
-                  {/* Transcript display + Try again */}
-                  {currentTranscript ? (
-                    <View style={styles.transcriptBox}>
-                      <Text style={styles.transcriptLabel}>Your observation:</Text>
-                      <Text style={styles.transcriptText}>"{currentTranscript}"</Text>
-                      <View style={styles.transcriptActions}>
-                        <TouchableOpacity style={styles.tryAgainBtn} onPress={tryAgain}>
-                          <Text style={styles.tryAgainText}>↻ Try again</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.saveObsBtn}
-                          onPress={() => saveObservation(index)}
-                        >
-                          <Text style={styles.saveObsText}>Save & continue →</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  ) : feedbackMode === "choose" ? (
+                  {feedbackMode === "choose" ? (
                     /* Choice screen: voice or text */
-                    <View style={styles.feedbackChoice}>
-                      {hasNativeSpeech && (
-                        <TouchableOpacity
-                          style={styles.choiceBtn}
-                          onPress={() => setFeedbackMode("voice")}
-                        >
-                          <Text style={styles.choiceIcon}>🎤</Text>
-                          <Text style={styles.choiceLabel}>Voice</Text>
-                        </TouchableOpacity>
+                    <View>
+                      {/* Show existing transcript if editing */}
+                      {currentTranscript && !isListening ? (
+                        <View style={styles.transcriptBox}>
+                          <Text style={styles.transcriptLabel}>Your observation:</Text>
+                          <Text style={styles.transcriptText}>"{currentTranscript}"</Text>
+                          <View style={styles.transcriptActions}>
+                            <TouchableOpacity style={styles.tryAgainBtn} onPress={tryAgain}>
+                              <Text style={styles.tryAgainText}>↻ Try again</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={styles.saveObsBtn}
+                              onPress={() => saveObservation(index)}
+                            >
+                              <Text style={styles.saveObsText}>Save & continue →</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      ) : (
+                        <View style={styles.feedbackChoice}>
+                          {hasNativeSpeech && (
+                            <TouchableOpacity
+                              style={styles.choiceBtn}
+                              onPress={() => setFeedbackMode("voice")}
+                            >
+                              <Text style={styles.choiceIcon}>🎤</Text>
+                              <Text style={styles.choiceLabel}>Voice</Text>
+                            </TouchableOpacity>
+                          )}
+                          <TouchableOpacity
+                            style={styles.choiceBtn}
+                            onPress={() => setFeedbackMode("text")}
+                          >
+                            <Text style={styles.choiceIcon}>✏️</Text>
+                            <Text style={styles.choiceLabel}>Text</Text>
+                          </TouchableOpacity>
+                        </View>
                       )}
-                      <TouchableOpacity
-                        style={styles.choiceBtn}
-                        onPress={() => setFeedbackMode("text")}
-                      >
-                        <Text style={styles.choiceIcon}>✏️</Text>
-                        <Text style={styles.choiceLabel}>Text</Text>
-                      </TouchableOpacity>
                     </View>
                   ) : feedbackMode === "voice" && hasNativeSpeech ? (
-                    /* Voice input */
+                    /* Voice input — always show mic + live transcript together */
                     <View>
+                      <LangToggle />
+
+                      {/* Live transcript while recording */}
+                      {currentTranscript ? (
+                        <View style={styles.liveTranscript}>
+                          <Text style={styles.liveTranscriptLabel}>
+                            {isListening ? "Listening..." : "Your observation:"}
+                          </Text>
+                          <Text style={styles.liveTranscriptText}>"{currentTranscript}"</Text>
+                        </View>
+                      ) : isListening ? (
+                        <View style={styles.liveTranscript}>
+                          <Text style={styles.liveTranscriptLabel}>Listening...</Text>
+                        </View>
+                      ) : null}
+
+                      {/* Mic button — always visible in voice mode */}
                       <TouchableOpacity
                         style={[styles.micBtn, isListening && styles.micBtnActive]}
                         onPress={isListening ? stopListening : startListening}
@@ -787,9 +846,25 @@ Use ${dog.name}'s name. Keep the tone like a supportive coach texting you after 
                           <Text style={styles.micIcon}>{isListening ? "⏹" : "🎤"}</Text>
                         </Animated.View>
                         <Text style={styles.micLabel}>
-                          {isListening ? "Tap to stop" : "Tap to record"}
+                          {isListening ? "Tap to stop" : currentTranscript ? "Tap to record more" : "Tap to record"}
                         </Text>
                       </TouchableOpacity>
+
+                      {/* Save / Try again — only when not listening and has transcript */}
+                      {!isListening && currentTranscript ? (
+                        <View style={[styles.transcriptActions, { marginTop: 12 }]}>
+                          <TouchableOpacity style={styles.tryAgainBtn} onPress={tryAgain}>
+                            <Text style={styles.tryAgainText}>↻ Try again</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.saveObsBtn}
+                            onPress={() => saveObservation(index)}
+                          >
+                            <Text style={styles.saveObsText}>Save & continue →</Text>
+                          </TouchableOpacity>
+                        </View>
+                      ) : null}
+
                       <TouchableOpacity
                         style={styles.switchModeBtn}
                         onPress={() => { stopListening(); setFeedbackMode("text"); }}
@@ -800,26 +875,45 @@ Use ${dog.name}'s name. Keep the tone like a supportive coach texting you after 
                   ) : (
                     /* Text input */
                     <View>
-                      <View style={styles.textInputWrap}>
-                        <TextInput
-                          style={styles.observationInput}
-                          placeholder="Describe what your dog did…"
-                          placeholderTextColor={C.textMuted}
-                          value={textInput}
-                          onChangeText={setTextInput}
-                          multiline
-                          maxLength={300}
-                        />
-                        <TouchableOpacity
-                          style={[styles.sendBtn, !textInput.trim() && styles.sendBtnDisabled]}
-                          onPress={() => submitTextObservation()}
-                          disabled={!textInput.trim()}
-                        >
-                          <Text style={[styles.sendBtnText, !textInput.trim() && styles.sendBtnTextDisabled]}>
-                            Send →
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
+                      {/* Show existing transcript if any */}
+                      {currentTranscript && !textInput ? (
+                        <View style={styles.transcriptBox}>
+                          <Text style={styles.transcriptLabel}>Your observation:</Text>
+                          <Text style={styles.transcriptText}>"{currentTranscript}"</Text>
+                          <View style={styles.transcriptActions}>
+                            <TouchableOpacity style={styles.tryAgainBtn} onPress={tryAgain}>
+                              <Text style={styles.tryAgainText}>↻ Try again</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={styles.saveObsBtn}
+                              onPress={() => saveObservation(index)}
+                            >
+                              <Text style={styles.saveObsText}>Save & continue →</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      ) : (
+                        <View style={styles.textInputWrap}>
+                          <TextInput
+                            style={styles.observationInput}
+                            placeholder="Describe what your dog did…"
+                            placeholderTextColor={C.textMuted}
+                            value={textInput}
+                            onChangeText={setTextInput}
+                            multiline
+                            maxLength={300}
+                          />
+                          <TouchableOpacity
+                            style={[styles.sendBtn, !textInput.trim() && styles.sendBtnDisabled]}
+                            onPress={() => submitTextObservation()}
+                            disabled={!textInput.trim()}
+                          >
+                            <Text style={[styles.sendBtnText, !textInput.trim() && styles.sendBtnTextDisabled]}>
+                              Send →
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
                       {hasNativeSpeech && (
                         <TouchableOpacity
                           style={styles.switchModeBtn}
@@ -984,6 +1078,12 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontStyle: "italic",
   },
+  obsEditHint: {
+    color: Palette.levelPurple,
+    fontSize: 11,
+    marginTop: 3,
+    fontWeight: "600",
+  },
   durationHint: {
     color: C.textMuted,
     fontSize: 12,
@@ -1018,6 +1118,33 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     marginBottom: 14,
+  },
+
+  // Language toggle
+  langToggle: {
+    flexDirection: "row",
+    alignSelf: "center",
+    marginBottom: 12,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: C.border,
+    overflow: "hidden",
+  },
+  langBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 20,
+    backgroundColor: C.surface,
+  },
+  langBtnActive: {
+    backgroundColor: Palette.levelPurple,
+  },
+  langText: {
+    color: C.textSecondary,
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  langTextActive: {
+    color: "#fff",
   },
 
   // Feedback choice (voice vs text)
@@ -1056,6 +1183,30 @@ const styles = StyleSheet.create({
   },
   micIcon: { fontSize: 32, marginBottom: 6 },
   micLabel: { color: C.textSecondary, fontSize: 13 },
+
+  // Live transcript (shown while recording)
+  liveTranscript: {
+    backgroundColor: C.surface,
+    borderRadius: Radius.md,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+  liveTranscriptLabel: {
+    color: C.textMuted,
+    fontSize: 11,
+    fontWeight: "600",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+    marginBottom: 4,
+  },
+  liveTranscriptText: {
+    color: C.text,
+    fontSize: 14,
+    lineHeight: 20,
+    fontStyle: "italic",
+  },
 
   // Switch mode
   switchModeBtn: { alignItems: "center", marginTop: 10, paddingVertical: 6 },
