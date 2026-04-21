@@ -47,17 +47,17 @@ const styles = StyleSheet.create({
   panel: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(15,11,46,0.92)",
+    backgroundColor: C.surface,
     borderWidth: 1,
-    borderColor: Palette.pawGold,
+    borderColor: C.border,
     borderRadius: Radius.full,
     paddingVertical: 8,
     paddingHorizontal: 6,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 14,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 6,
   },
   btn: {
     flexDirection: "row",
@@ -71,6 +71,6 @@ const styles = StyleSheet.create({
   divider: {
     width: 1,
     height: 22,
-    backgroundColor: "rgba(15,11,46,0.08)",
+    backgroundColor: C.border,
   },
 });
