@@ -16,7 +16,9 @@
         "NSSpeechRecognitionUsageDescription": "Pawlo converts your voice to text so Pawlo (your dog's teacher) can give you instant feedback on every session.",
         "NSLocationWhenInUseUsageDescription": "Pawlo tracks your location during dog walks to measure distance and award XP.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Pawlo needs background location to keep tracking your walk when the screen is locked.",
-        "UIBackgroundModes": ["location"]
+        "UIBackgroundModes": [
+          "location"
+        ]
       }
     },
     "android": {
@@ -77,7 +79,8 @@
           "defaultChannel": "training"
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,

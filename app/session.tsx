@@ -3,8 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
-  NativeModules,
-  Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -13,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { getLocales } from "expo-localization";
 import { Colors, Palette, Radius, Spacing } from "../constants/theme";
 import { sendSessionCompleteNotification } from "../lib/notifications";
 import { SoundPanel } from "../components/SoundPanel";
@@ -35,13 +34,10 @@ try {
 
 function getDeviceLanguage(): string {
   try {
-    const locale =
-      Platform.OS === "ios"
-        ? NativeModules.SettingsManager?.settings?.AppleLocale ??
-          NativeModules.SettingsManager?.settings?.AppleLanguages?.[0]
-        : NativeModules.I18nManager?.localeIdentifier;
-    if (locale && (locale.startsWith("tr") || locale.startsWith("tr_"))) {
-      return "tr-TR";
+    const locales = getLocales();
+    if (locales.length > 0) {
+      const tag = locales[0].languageTag; // e.g. "tr-TR", "en-US"
+      if (tag.startsWith("tr")) return "tr-TR";
     }
   } catch {}
   return "en-US";
@@ -134,17 +130,18 @@ export default function SessionScreen() {
   useSpeechRecognitionEvent("result", (event: any) => {
     const text = event.results[0]?.transcript ?? "";
     if (text) {
+      // In continuous mode, keep updating transcript as user speaks.
+      // Don't auto-stop — let the user tap stop when they're done.
       setCurrentTranscript(text);
-      stopListening();
     }
   });
 
   useSpeechRecognitionEvent("error", () => {
-    stopListening();
+    setIsListening(false);
+    listeningRef.current = false;
   });
 
   useSpeechRecognitionEvent("end", () => {
-    // Only update state, don't try to restart
     setIsListening(false);
     listeningRef.current = false;
     if (autoStopTimer.current) {
@@ -276,16 +273,16 @@ export default function SessionScreen() {
       const lang = getDeviceLanguage();
       ExpoSpeechRecognitionModule.start({
         lang,
-        continuous: false, // Single utterance mode — more stable
-        interimResults: false,
+        continuous: true, // Keep listening until user taps stop
+        interimResults: true, // Show live transcript while speaking
       });
 
-      // Auto-stop after 30 seconds to prevent ghost sessions
+      // Safety auto-stop after 60 seconds
       autoStopTimer.current = setTimeout(() => {
         if (listeningRef.current) {
           stopListening();
         }
-      }, 30000);
+      }, 60000);
     } catch {
       setIsListening(false);
       listeningRef.current = false;
