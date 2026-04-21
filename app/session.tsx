@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
+  NativeModules,
+  Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -28,6 +30,22 @@ try {
   ExpoSpeechRecognitionModule = mod.ExpoSpeechRecognitionModule;
   useSpeechRecognitionEvent = mod.useSpeechRecognitionEvent;
 } catch {}
+
+// ── Detect device language for speech recognition ──
+
+function getDeviceLanguage(): string {
+  try {
+    const locale =
+      Platform.OS === "ios"
+        ? NativeModules.SettingsManager?.settings?.AppleLocale ??
+          NativeModules.SettingsManager?.settings?.AppleLanguages?.[0]
+        : NativeModules.I18nManager?.localeIdentifier;
+    if (locale && (locale.startsWith("tr") || locale.startsWith("tr_"))) {
+      return "tr-TR";
+    }
+  } catch {}
+  return "en-US";
+}
 
 // ── Types ───────────────────────────────────────────────────────────────
 
@@ -92,7 +110,10 @@ export default function SessionScreen() {
   const [currentTranscript, setCurrentTranscript] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [textInput, setTextInput] = useState("");
+  const [feedbackMode, setFeedbackMode] = useState<"choose" | "voice" | "text">("choose");
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const listeningRef = useRef(false);
+  const autoStopTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Session summary ──
   const [sessionPhase, setSessionPhase] = useState<"active" | "summary">("active");
@@ -114,11 +135,23 @@ export default function SessionScreen() {
     const text = event.results[0]?.transcript ?? "";
     if (text) {
       setCurrentTranscript(text);
-      setIsListening(false);
+      stopListening();
     }
   });
-  useSpeechRecognitionEvent("error", () => setIsListening(false));
-  useSpeechRecognitionEvent("end", () => setIsListening(false));
+
+  useSpeechRecognitionEvent("error", () => {
+    stopListening();
+  });
+
+  useSpeechRecognitionEvent("end", () => {
+    // Only update state, don't try to restart
+    setIsListening(false);
+    listeningRef.current = false;
+    if (autoStopTimer.current) {
+      clearTimeout(autoStopTimer.current);
+      autoStopTimer.current = null;
+    }
+  });
 
   useEffect(() => {
     if (isListening) {
@@ -133,13 +166,18 @@ export default function SessionScreen() {
     }
   }, [isListening]);
 
-  // ── Break timer tick ──
-
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (breakIntervalRef.current) clearInterval(breakIntervalRef.current);
+      if (autoStopTimer.current) clearTimeout(autoStopTimer.current);
+      if (listeningRef.current && ExpoSpeechRecognitionModule) {
+        try { ExpoSpeechRecognitionModule.stop(); } catch {}
+      }
     };
   }, []);
+
+  // ── Break timer tick ──
 
   const startBreakTimer = (stepIndex: number, seconds: number) => {
     if (seconds <= 0) return;
@@ -150,7 +188,6 @@ export default function SessionScreen() {
         if (!t || t.remaining <= 1) {
           if (breakIntervalRef.current) clearInterval(breakIntervalRef.current);
           breakIntervalRef.current = null;
-          // Auto-expand next step when break finishes
           if (dayData) {
             const nextIndex = stepIndex + 1;
             if (nextIndex < dayData.steps.length) {
@@ -218,66 +255,87 @@ export default function SessionScreen() {
     }
   };
 
-  // ── Voice input ──
+  // ── Voice input (with stability fixes) ──
 
   const startListening = async () => {
-    if (!hasNativeSpeech) return;
+    if (!hasNativeSpeech || listeningRef.current) return;
     try {
       const result = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
       if (!result.granted) {
         alert("Microphone permission required.");
         return;
       }
+
+      // Stop any existing session first
+      try { ExpoSpeechRecognitionModule.stop(); } catch {}
+
       setCurrentTranscript("");
       setIsListening(true);
+      listeningRef.current = true;
+
+      const lang = getDeviceLanguage();
       ExpoSpeechRecognitionModule.start({
-        lang: "en-US",
-        continuous: true,
+        lang,
+        continuous: false, // Single utterance mode — more stable
         interimResults: false,
       });
+
+      // Auto-stop after 30 seconds to prevent ghost sessions
+      autoStopTimer.current = setTimeout(() => {
+        if (listeningRef.current) {
+          stopListening();
+        }
+      }, 30000);
     } catch {
       setIsListening(false);
+      listeningRef.current = false;
     }
   };
 
   const stopListening = () => {
-    if (ExpoSpeechRecognitionModule) ExpoSpeechRecognitionModule.stop();
+    if (autoStopTimer.current) {
+      clearTimeout(autoStopTimer.current);
+      autoStopTimer.current = null;
+    }
+    if (ExpoSpeechRecognitionModule && listeningRef.current) {
+      try { ExpoSpeechRecognitionModule.stop(); } catch {}
+    }
     setIsListening(false);
+    listeningRef.current = false;
   };
 
   // ── Step completion ──
 
   const completeStep = (index: number) => {
     if (completedSteps.includes(index)) return;
-    setCompletedSteps((prev) => [...prev, index]);
+    const newCompleted = [...completedSteps, index];
+    setCompletedSteps(newCompleted);
 
     const step = dayData?.steps[index];
     if (step?.voice_prompt) {
-      // Show feedback card
       setActivePromptIndex(index);
       setCurrentTranscript("");
       setTextInput("");
+      setFeedbackMode("choose"); // Reset to choice screen
     } else {
-      // No feedback needed — start break + move on
-      finishStepFlow(index);
+      finishStepFlow(index, newCompleted);
     }
   };
 
   const saveObservation = (stepIndex: number) => {
     if (!currentTranscript.trim()) return;
-    setObservations((prev) => [
-      ...prev.filter((o) => o.stepIndex !== stepIndex),
+    const newObs = [
+      ...observations.filter((o) => o.stepIndex !== stepIndex),
       { stepIndex, transcript: currentTranscript.trim() },
-    ]);
+    ];
+    setObservations(newObs);
     setActivePromptIndex(null);
-    finishStepFlow(stepIndex);
+    setFeedbackMode("choose");
+    finishStepFlow(stepIndex, completedSteps);
   };
 
   const submitTextObservation = () => {
     if (!textInput.trim()) return;
-    // Just show the transcript — don't save yet. The user reviews it
-    // in the transcriptBox and taps "Save & continue" to confirm or
-    // "Try again" to redo. Same flow as voice input.
     setCurrentTranscript(textInput.trim());
     setTextInput("");
   };
@@ -290,16 +348,15 @@ export default function SessionScreen() {
   const skipFeedback = (stepIndex: number) => {
     setActivePromptIndex(null);
     setCurrentTranscript("");
-    finishStepFlow(stepIndex);
+    setFeedbackMode("choose");
+    finishStepFlow(stepIndex, completedSteps);
   };
 
-  const finishStepFlow = (stepIndex: number) => {
+  const finishStepFlow = (stepIndex: number, currentCompleted: number[]) => {
     const step = dayData?.steps[stepIndex];
-    // Start break timer if applicable
     if (step && step.break_seconds > 0) {
       startBreakTimer(stepIndex, step.break_seconds);
     } else if (dayData) {
-      // No break — auto-expand next step
       const nextIndex = stepIndex + 1;
       if (nextIndex < dayData.steps.length) {
         setExpandedStep(nextIndex);
@@ -308,7 +365,7 @@ export default function SessionScreen() {
 
     // Check if all steps are done
     const allDone = dayData
-      ? completedSteps.length + 1 >= dayData.steps.length
+      ? currentCompleted.length >= dayData.steps.length
       : false;
     if (allDone) {
       setTimeout(() => setSessionPhase("summary"), 500);
@@ -321,9 +378,10 @@ export default function SessionScreen() {
     if (!dayData || !dog || observations.length === 0) return;
     setSummaryLoading(true);
     try {
+      // Build observation lines for ALL steps (including the last one)
       const obsLines = dayData.steps.map((step, i) => {
         const obs = observations.find((o) => o.stepIndex === i);
-        return `Step ${step.number} (${step.instruction}): ${obs ? `"${obs.transcript}"` : "(no observation)"}`;
+        return `Step ${step.number} — "${step.instruction}": ${obs ? `User said: "${obs.transcript}"` : "(no observation recorded)"}`;
       }).join("\n");
 
       const { data: { session } } = await supabase.auth.getSession();
@@ -333,25 +391,46 @@ export default function SessionScreen() {
         headers: { Authorization: `Bearer ${session.access_token}` },
         body: {
           model: "claude-haiku-4-5-20251001",
-          max_tokens: 300,
-          system: `You are Pawlo — the friendly dog teacher mascot. Warm, encouraging, and practical.
+          max_tokens: 500,
+          system: `You are Pawlo, a warm and friendly dog training teacher mascot. You speak with encouragement and use casual, clear language.
+
+IMPORTANT FORMATTING RULES:
+- Do NOT use markdown, headers (#), bold (**), or bullet lists
+- Use emojis naturally to make the summary fun and visual (like a friendly chat message)
+- Write in short paragraphs, not lists
+- Keep it warm, specific, and practical
+- The user may speak in English or Turkish — respond in the same language they used in their observations
+
 Dog: ${dog.name}, ${dog.breed ?? "unknown breed"}, Level ${dog.level ?? 1}.
 Program: ${programTitle} · Day ${dayData.day} — ${dayData.title}.
 
 The user just completed all ${dayData.steps.length} steps. Here are their observations:
 ${obsLines}
 
-Give a warm 3-5 sentence analysis covering:
-1. What went well (be specific, reference their observations)
-2. Any patterns you notice
-3. One actionable tip for next time
-Use the dog's name. Be concise and jargon-free.`,
+Give a warm analysis (4-6 sentences) covering:
+1) What went well — be specific about what the user described
+2) Any patterns or concerns you notice (e.g. if the dog barked a lot, got anxious, etc.)
+3) One actionable tip for next time
+
+Then add a section starting with "Tomorrow's plan:" where you suggest specific adjustments for the next session based on what happened today. For example:
+- If the dog struggled (barked a lot, got anxious, didn't follow commands), suggest shorter durations or more warm-up steps
+- If the dog did great, suggest slightly increasing the challenge (longer duration, fewer warm-ups)
+- Be specific about what to change (e.g. "reduce alone time from 3 minutes to 1.5 minutes" or "try extending the stay to 2 minutes")
+
+Use ${dog.name}'s name. Keep the tone like a supportive coach texting you after practice.`,
           messages: [{ role: "user", content: "Please analyse my session." }],
         },
       });
 
       if (error) throw error;
-      setSummaryText(data?.content?.[0]?.text ?? "Great session — keep it up!");
+      const rawText = data?.content?.[0]?.text ?? "Great session — keep it up!";
+      // Strip any accidental markdown that slipped through
+      const cleaned = rawText
+        .replace(/^#{1,6}\s+/gm, "")
+        .replace(/\*\*(.*?)\*\*/g, "$1")
+        .replace(/^\s*[-*]\s+/gm, "")
+        .trim();
+      setSummaryText(cleaned);
     } catch {
       setSummaryText("Couldn't analyse right now — but great job completing the session! Keep it up.");
     } finally {
@@ -680,40 +759,78 @@ Use the dog's name. Be concise and jargon-free.`,
                         </TouchableOpacity>
                       </View>
                     </View>
-                  ) : hasNativeSpeech ? (
-                    /* Voice input */
-                    <TouchableOpacity
-                      style={[styles.micBtn, isListening && styles.micBtnActive]}
-                      onPress={isListening ? stopListening : startListening}
-                    >
-                      <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-                        <Text style={styles.micIcon}>{isListening ? "⏹" : "🎤"}</Text>
-                      </Animated.View>
-                      <Text style={styles.micLabel}>
-                        {isListening ? "Tap to stop" : "Tap to record"}
-                      </Text>
-                    </TouchableOpacity>
-                  ) : (
-                    /* Text fallback */
-                    <View style={styles.textInputWrap}>
-                      <TextInput
-                        style={styles.observationInput}
-                        placeholder="Describe what your dog did…"
-                        placeholderTextColor={C.textMuted}
-                        value={textInput}
-                        onChangeText={setTextInput}
-                        multiline
-                        maxLength={300}
-                      />
+                  ) : feedbackMode === "choose" ? (
+                    /* Choice screen: voice or text */
+                    <View style={styles.feedbackChoice}>
+                      {hasNativeSpeech && (
+                        <TouchableOpacity
+                          style={styles.choiceBtn}
+                          onPress={() => setFeedbackMode("voice")}
+                        >
+                          <Text style={styles.choiceIcon}>🎤</Text>
+                          <Text style={styles.choiceLabel}>Voice</Text>
+                        </TouchableOpacity>
+                      )}
                       <TouchableOpacity
-                        style={[styles.sendBtn, !textInput.trim() && styles.sendBtnDisabled]}
-                        onPress={() => submitTextObservation()}
-                        disabled={!textInput.trim()}
+                        style={styles.choiceBtn}
+                        onPress={() => setFeedbackMode("text")}
                       >
-                        <Text style={[styles.sendBtnText, !textInput.trim() && styles.sendBtnTextDisabled]}>
-                          Send →
+                        <Text style={styles.choiceIcon}>✏️</Text>
+                        <Text style={styles.choiceLabel}>Text</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : feedbackMode === "voice" && hasNativeSpeech ? (
+                    /* Voice input */
+                    <View>
+                      <TouchableOpacity
+                        style={[styles.micBtn, isListening && styles.micBtnActive]}
+                        onPress={isListening ? stopListening : startListening}
+                      >
+                        <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+                          <Text style={styles.micIcon}>{isListening ? "⏹" : "🎤"}</Text>
+                        </Animated.View>
+                        <Text style={styles.micLabel}>
+                          {isListening ? "Tap to stop" : "Tap to record"}
                         </Text>
                       </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.switchModeBtn}
+                        onPress={() => { stopListening(); setFeedbackMode("text"); }}
+                      >
+                        <Text style={styles.switchModeText}>Switch to text ✏️</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    /* Text input */
+                    <View>
+                      <View style={styles.textInputWrap}>
+                        <TextInput
+                          style={styles.observationInput}
+                          placeholder="Describe what your dog did…"
+                          placeholderTextColor={C.textMuted}
+                          value={textInput}
+                          onChangeText={setTextInput}
+                          multiline
+                          maxLength={300}
+                        />
+                        <TouchableOpacity
+                          style={[styles.sendBtn, !textInput.trim() && styles.sendBtnDisabled]}
+                          onPress={() => submitTextObservation()}
+                          disabled={!textInput.trim()}
+                        >
+                          <Text style={[styles.sendBtnText, !textInput.trim() && styles.sendBtnTextDisabled]}>
+                            Send →
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                      {hasNativeSpeech && (
+                        <TouchableOpacity
+                          style={styles.switchModeBtn}
+                          onPress={() => setFeedbackMode("voice")}
+                        >
+                          <Text style={styles.switchModeText}>Switch to voice 🎤</Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
 
@@ -855,7 +972,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "rgba(15,11,46,0.06)",
+    backgroundColor: C.border,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -906,6 +1023,26 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
 
+  // Feedback choice (voice vs text)
+  feedbackChoice: {
+    flexDirection: "row",
+    gap: 12,
+    justifyContent: "center",
+  },
+  choiceBtn: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 20,
+    borderRadius: Radius.lg,
+    backgroundColor: C.surface,
+    borderWidth: 1,
+    borderColor: C.border,
+    gap: 8,
+  },
+  choiceIcon: { fontSize: 28 },
+  choiceLabel: { color: C.text, fontSize: 14, fontWeight: "600" },
+
   // Voice
   micBtn: {
     alignItems: "center",
@@ -922,6 +1059,10 @@ const styles = StyleSheet.create({
   },
   micIcon: { fontSize: 32, marginBottom: 6 },
   micLabel: { color: C.textSecondary, fontSize: 13 },
+
+  // Switch mode
+  switchModeBtn: { alignItems: "center", marginTop: 10, paddingVertical: 6 },
+  switchModeText: { color: C.textMuted, fontSize: 13 },
 
   // Transcript
   transcriptBox: {
