@@ -1,9 +1,11 @@
 import * as Location from "expo-location";
+import * as TaskManager from "expo-task-manager";
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   Alert,
-  Dimensions,
+  AppState,
+  AppStateStatus,
   Platform,
   ScrollView,
   StatusBar,
@@ -18,7 +20,35 @@ import { computeLevel, useStore } from "../lib/store";
 import { supabase } from "../lib/supabase";
 
 const C = Colors.light;
-const { width: SCREEN_W } = Dimensions.get("window");
+const BACKGROUND_LOCATION_TASK = "pawlo-walk-tracking";
+
+// ─── Background location task definition ────────────────────────────────────
+
+// Shared state for background → foreground data passing
+let bgCoords: { latitude: number; longitude: number }[] = [];
+let bgDistance = 0;
+
+TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }: any) => {
+  if (error) return;
+  if (data?.locations?.length) {
+    for (const loc of data.locations) {
+      const newCoord = {
+        latitude: loc.coords.latitude,
+        longitude: loc.coords.longitude,
+      };
+      if (bgCoords.length > 0) {
+        const last = bgCoords[bgCoords.length - 1];
+        const d = haversineCalc(last.latitude, last.longitude, newCoord.latitude, newCoord.longitude);
+        if (d >= 1 && d <= 100) {
+          bgDistance += d;
+          bgCoords.push(newCoord);
+        }
+      } else {
+        bgCoords.push(newCoord);
+      }
+    }
+  }
+});
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -49,7 +79,7 @@ function formatPace(meters: number, sec: number): string {
   return `${mins}:${String(secs).padStart(2, "0")} /km`;
 }
 
-function haversine(lat1: number, lon1: number, lat2: number, lon2: number): number {
+function haversineCalc(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371000;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
@@ -82,16 +112,112 @@ export default function WalkScreen() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startedAt = useRef<Date | null>(null);
   const mapRef = useRef<any>(null);
-  const distRef = useRef(0); // avoid stale closure
+  const distRef = useRef(0);
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const walkStateRef = useRef<WalkState>("idle");
+  const bgStartTime = useRef<number>(0);
+
+  // Keep walkStateRef in sync
+  useEffect(() => {
+    walkStateRef.current = walkState;
+  }, [walkState]);
 
   useEffect(() => {
     getInitialLocation();
     loadRecentWalks();
+
+    // AppState listener for background/foreground transitions
+    const sub = AppState.addEventListener("change", handleAppStateChange);
+
     return () => {
+      sub.remove();
       locationSub.current?.remove();
       if (timerRef.current) clearInterval(timerRef.current);
+      stopBackgroundLocation();
     };
   }, []);
+
+  const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+    const prevState = appStateRef.current;
+    appStateRef.current = nextAppState;
+
+    // Going to background while walking → start background location
+    if (prevState === "active" && nextAppState.match(/inactive|background/) && walkStateRef.current === "walking") {
+      // Store current state for background task
+      bgCoords = [];
+      bgDistance = 0;
+      bgStartTime.current = Date.now();
+
+      // Stop foreground watcher, start background
+      locationSub.current?.remove();
+      locationSub.current = null;
+      // Keep timer running — setInterval works in background for short periods
+      await startBackgroundLocation();
+    }
+
+    // Coming back to foreground while walking → restore foreground tracking
+    if (prevState.match(/inactive|background/) && nextAppState === "active" && walkStateRef.current === "walking") {
+      // Merge background data into state
+      const bgElapsed = Math.round((Date.now() - bgStartTime.current) / 1000);
+
+      if (bgCoords.length > 0) {
+        setCoords((prev) => [...prev, ...bgCoords]);
+        distRef.current += bgDistance;
+        setDistance(distRef.current);
+        const lastBg = bgCoords[bgCoords.length - 1];
+        setCurrentPos(lastBg);
+        mapRef.current?.animateToRegion({
+          ...lastBg,
+          latitudeDelta: 0.005,
+          longitudeDelta: 0.005,
+        }, 500);
+      }
+
+      // Add elapsed background time
+      setSeconds((s) => s + bgElapsed);
+
+      bgCoords = [];
+      bgDistance = 0;
+
+      // Stop background, restart foreground
+      await stopBackgroundLocation();
+      await startForegroundWatcher();
+    }
+  };
+
+  const startBackgroundLocation = async () => {
+    try {
+      const { status } = await Location.requestBackgroundPermissionsAsync();
+      if (status !== "granted") return;
+
+      const isRunning = await Location.hasStartedLocationUpdatesAsync(BACKGROUND_LOCATION_TASK).catch(() => false);
+      if (isRunning) return;
+
+      await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, {
+        accuracy: Location.Accuracy.BestForNavigation,
+        timeInterval: 3000,
+        distanceInterval: 5,
+        deferredUpdatesInterval: 3000,
+        showsBackgroundLocationIndicator: true,
+        foregroundService: {
+          notificationTitle: "Pawlo Walk Tracker",
+          notificationBody: "Tracking your walk in the background...",
+          notificationColor: "#FAC775",
+        },
+      });
+    } catch (err) {
+      console.error("Failed to start background location:", err);
+    }
+  };
+
+  const stopBackgroundLocation = async () => {
+    try {
+      const isRunning = await Location.hasStartedLocationUpdatesAsync(BACKGROUND_LOCATION_TASK).catch(() => false);
+      if (isRunning) {
+        await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
+      }
+    } catch {}
+  };
 
   const getInitialLocation = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -113,12 +239,49 @@ export default function WalkScreen() {
 
   // ── Walk controls ──
 
+  const startForegroundWatcher = async () => {
+    locationSub.current = await Location.watchPositionAsync(
+      {
+        accuracy: Location.Accuracy.BestForNavigation,
+        timeInterval: 2000,
+        distanceInterval: 3,
+      },
+      (loc) => {
+        const newCoord: Coord = {
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude,
+        };
+        setCurrentPos(newCoord);
+
+        setCoords((prev) => {
+          if (prev.length > 0) {
+            const last = prev[prev.length - 1];
+            const d = haversineCalc(last.latitude, last.longitude, newCoord.latitude, newCoord.longitude);
+            if (d < 1 || d > 100) return prev;
+            distRef.current += d;
+            setDistance(distRef.current);
+          }
+          return [...prev, newCoord];
+        });
+
+        mapRef.current?.animateToRegion({
+          ...newCoord,
+          latitudeDelta: 0.005,
+          longitudeDelta: 0.005,
+        }, 500);
+      },
+    );
+  };
+
   const startWalk = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") {
       Alert.alert("Location Required", "Enable location access to track your walk.");
       return;
     }
+
+    // Also request background permission upfront
+    await Location.requestBackgroundPermissionsAsync();
 
     setWalkState("walking");
     setSeconds(0);
@@ -128,84 +291,21 @@ export default function WalkScreen() {
     startedAt.current = new Date();
 
     timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
-
-    locationSub.current = await Location.watchPositionAsync(
-      {
-        accuracy: Location.Accuracy.BestForNavigation,
-        timeInterval: 2000,
-        distanceInterval: 3,
-      },
-      (loc) => {
-        const newCoord: Coord = {
-          latitude: loc.coords.latitude,
-          longitude: loc.coords.longitude,
-        };
-        setCurrentPos(newCoord);
-
-        setCoords((prev) => {
-          if (prev.length > 0) {
-            const last = prev[prev.length - 1];
-            const d = haversine(last.latitude, last.longitude, newCoord.latitude, newCoord.longitude);
-            // Filter GPS noise: ignore < 1m or > 100m jumps
-            if (d < 1 || d > 100) return prev;
-            distRef.current += d;
-            setDistance(distRef.current);
-          }
-          return [...prev, newCoord];
-        });
-
-        // Auto-center map
-        mapRef.current?.animateToRegion({
-          ...newCoord,
-          latitudeDelta: 0.005,
-          longitudeDelta: 0.005,
-        }, 500);
-      },
-    );
+    await startForegroundWatcher();
   };
 
-  const pauseWalk = () => {
+  const pauseWalk = async () => {
     setWalkState("paused");
     locationSub.current?.remove();
     locationSub.current = null;
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    await stopBackgroundLocation();
   };
 
   const resumeWalk = async () => {
     setWalkState("walking");
     timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
-
-    locationSub.current = await Location.watchPositionAsync(
-      {
-        accuracy: Location.Accuracy.BestForNavigation,
-        timeInterval: 2000,
-        distanceInterval: 3,
-      },
-      (loc) => {
-        const newCoord: Coord = {
-          latitude: loc.coords.latitude,
-          longitude: loc.coords.longitude,
-        };
-        setCurrentPos(newCoord);
-
-        setCoords((prev) => {
-          if (prev.length > 0) {
-            const last = prev[prev.length - 1];
-            const d = haversine(last.latitude, last.longitude, newCoord.latitude, newCoord.longitude);
-            if (d < 1 || d > 100) return prev;
-            distRef.current += d;
-            setDistance(distRef.current);
-          }
-          return [...prev, newCoord];
-        });
-
-        mapRef.current?.animateToRegion({
-          ...newCoord,
-          latitudeDelta: 0.005,
-          longitudeDelta: 0.005,
-        }, 500);
-      },
-    );
+    await startForegroundWatcher();
   };
 
   const finishWalk = () => {
@@ -224,6 +324,7 @@ export default function WalkScreen() {
     setSaving(true);
     locationSub.current?.remove(); locationSub.current = null;
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    await stopBackgroundLocation();
 
     const xp = calcWalkXP(distance, seconds);
 
@@ -274,9 +375,10 @@ export default function WalkScreen() {
       { text: "Cancel", style: "cancel" },
       {
         text: "Discard", style: "destructive",
-        onPress: () => {
+        onPress: async () => {
           locationSub.current?.remove();
           if (timerRef.current) clearInterval(timerRef.current);
+          await stopBackgroundLocation();
           setWalkState("idle");
           setSeconds(0);
           setDistance(0);
@@ -328,7 +430,7 @@ export default function WalkScreen() {
               initialRegion={mapRegion}
               showsUserLocation
               showsMyLocationButton={false}
-              userInterfaceStyle="dark"
+              userInterfaceStyle="light"
             />
             <View style={styles.mapOverlay}>
               <TouchableOpacity style={styles.startBtn} onPress={startWalk}>
@@ -385,7 +487,7 @@ export default function WalkScreen() {
               initialRegion={mapRegion}
               showsUserLocation
               showsMyLocationButton={false}
-              userInterfaceStyle="dark"
+              userInterfaceStyle="light"
             >
               {coords.length >= 2 && (
                 <Polyline
@@ -438,7 +540,7 @@ export default function WalkScreen() {
                   <Text style={styles.ctrlBtnTextDark}>▶️ Resume</Text>
                 </TouchableOpacity>
               )}
-              <TouchableOpacity style={styles.finishBtn} onPress={finishWalk} disabled={saving}>
+              <TouchableOpacity style={styles.finishWalkBtn} onPress={finishWalk} disabled={saving}>
                 <Text style={styles.ctrlBtnTextDark}>
                   {saving ? "Saving..." : `✅ Finish`}
                 </Text>
@@ -464,7 +566,7 @@ export default function WalkScreen() {
                   : mapRegion
               }
               showsUserLocation={false}
-              userInterfaceStyle="dark"
+              userInterfaceStyle="light"
             >
               {coords.length >= 2 && (
                 <Polyline coordinates={coords} strokeColor={Palette.pawGold} strokeWidth={4} />
@@ -539,13 +641,13 @@ const styles = StyleSheet.create({
   mapOverlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: "flex-end", alignItems: "center", paddingBottom: 20,
-    backgroundColor: "rgba(0,0,0,0.15)",
+    backgroundColor: "rgba(0,0,0,0.1)",
   },
   startBtn: {
     backgroundColor: Palette.streakGreen, borderRadius: Radius.full,
     paddingVertical: 16, paddingHorizontal: 48,
   },
-  startBtnText: { color: Palette.questNight, fontSize: 18, fontWeight: "700" },
+  startBtnText: { color: "#fff", fontSize: 18, fontWeight: "700" },
 
   // XP info
   xpInfo: {
@@ -581,8 +683,9 @@ const styles = StyleSheet.create({
   startMarker: { width: 20, height: 20, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   floatingStats: {
     position: "absolute", top: 12, left: 12, right: 12,
-    backgroundColor: "rgba(15,11,46,0.9)", borderRadius: Radius.lg,
+    backgroundColor: "rgba(255,255,255,0.95)", borderRadius: Radius.lg,
     flexDirection: "row", padding: 12,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4,
   },
   floatStat: { flex: 1, alignItems: "center" },
   floatValue: { color: C.text, fontSize: 16, fontWeight: "700" },
@@ -590,8 +693,9 @@ const styles = StyleSheet.create({
   floatDivider: { width: 1, backgroundColor: C.border, marginVertical: 2 },
   floatingXP: {
     position: "absolute", bottom: 12, left: 12,
-    backgroundColor: "rgba(15,11,46,0.9)", borderRadius: Radius.full,
+    backgroundColor: "rgba(255,255,255,0.95)", borderRadius: Radius.full,
     flexDirection: "row", alignItems: "center", paddingVertical: 8, paddingHorizontal: 14, gap: 6,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4,
   },
   gpsDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: C.textMuted },
   gpsDotActive: { backgroundColor: Palette.streakGreen },
@@ -608,7 +712,7 @@ const styles = StyleSheet.create({
     flex: 1, backgroundColor: Palette.streakGreen, borderRadius: Radius.lg,
     paddingVertical: 14, alignItems: "center",
   },
-  finishBtn: {
+  finishWalkBtn: {
     flex: 1, backgroundColor: Palette.pawGold, borderRadius: Radius.lg,
     paddingVertical: 14, alignItems: "center",
   },
@@ -635,7 +739,7 @@ const styles = StyleSheet.create({
     backgroundColor: Palette.streakGreen, borderRadius: Radius.lg,
     paddingVertical: 15, width: "100%", alignItems: "center", marginBottom: 10,
   },
-  againBtnText: { color: Palette.questNight, fontSize: 16, fontWeight: "700" },
+  againBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
   homeBtn: {
     borderWidth: 1, borderColor: C.border, borderRadius: Radius.lg,
     paddingVertical: 13, width: "100%", alignItems: "center",

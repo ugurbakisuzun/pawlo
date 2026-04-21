@@ -2,7 +2,7 @@
   "expo": {
     "name": "Pawlo",
     "slug": "pawquest",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "pawlo",
@@ -14,7 +14,9 @@
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Pawlo uses your microphone so you can describe your dog's behaviour hands-free during training sessions.",
         "NSSpeechRecognitionUsageDescription": "Pawlo converts your voice to text so Pawlo (your dog's teacher) can give you instant feedback on every session.",
-        "NSLocationWhenInUseUsageDescription": "Pawlo tracks your location during dog walks to measure distance and award XP."
+        "NSLocationWhenInUseUsageDescription": "Pawlo tracks your location during dog walks to measure distance and award XP.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Pawlo needs background location to keep tracking your walk when the screen is locked.",
+        "UIBackgroundModes": ["location"]
       }
     },
     "android": {
@@ -23,6 +25,9 @@
         "RECORD_AUDIO",
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
         "POST_NOTIFICATIONS"
       ],
       "config": {
@@ -59,7 +64,10 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Pawlo tracks your location during dog walks to measure distance and award XP."
+          "locationWhenInUsePermission": "Pawlo tracks your location during dog walks to measure distance and award XP.",
+          "locationAlwaysAndWhenInUsePermission": "Pawlo needs background location to keep tracking your walk when the screen is locked.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
         }
       ],
       [
